@@ -40,5 +40,11 @@ export function createUserRepository(): IUserRepository {
         .returning("*");
       return toUser(row);
     },
+
+    async markEmailVerified(id) {
+      await db("users")
+        .where({ id })
+        .update({ email_verified_at: new Date(), updated_at: new Date() });
+    },
   };
 }

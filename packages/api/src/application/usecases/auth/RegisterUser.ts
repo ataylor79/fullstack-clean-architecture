@@ -1,6 +1,8 @@
 import argon2 from "argon2";
 import type { IUserRepository } from "../../../domain/repositories/IUserRepository";
 import type { IRefreshTokenRepository } from "../../../domain/repositories/IRefreshTokenRepository";
+import type { IEmailVerificationRepository } from "../../../domain/repositories/IEmailVerificationRepository";
+import type { IEmailService } from "../../../domain/services/IEmailService";
 import {
   generateAccessToken,
   generateRefreshToken,
@@ -8,10 +10,13 @@ import {
   REFRESH_TOKEN_TTL_MS,
 } from "../../../infrastructure/auth/tokens";
 import { ConflictError } from "../../../presentation/errors";
+import { sendVerificationEmail } from "./SendVerificationEmail";
 
 type Deps = {
   userRepo: IUserRepository;
   refreshTokenRepo: IRefreshTokenRepository;
+  emailVerificationRepo: IEmailVerificationRepository;
+  emailService: IEmailService;
 };
 
 export async function registerUser(
@@ -33,6 +38,12 @@ export async function registerUser(
   const expiresAt = new Date(Date.now() + REFRESH_TOKEN_TTL_MS);
 
   await deps.refreshTokenRepo.create({ userId: user.id, tokenHash, expiresAt });
+
+  await sendVerificationEmail(
+    { emailVerificationRepo: deps.emailVerificationRepo, emailService: deps.emailService },
+    user.id,
+    user.email
+  );
 
   return {
     user: { id: user.id, email: user.email },

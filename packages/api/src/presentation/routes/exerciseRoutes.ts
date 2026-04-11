@@ -1,8 +1,25 @@
-import { Router } from "express";
+import { Router, IRouter } from "express";
+import { z } from "zod";
 import { createExerciseRepository } from "../../infrastructure/repositories/ExerciseRepository";
-import { NotFoundError } from "../errors";
+import { NotFoundError, ValidationError } from "../errors";
 
-export const exerciseRouter = Router();
+export const exerciseRouter: IRouter = Router();
+
+const createExerciseSchema = z.object({
+  name: z.string().min(1),
+  muscleGroup: z.string().min(1),
+  notes: z.string().optional(),
+});
+
+const updateExerciseSchema = z
+  .object({
+    name: z.string().min(1).optional(),
+    muscleGroup: z.string().min(1).optional(),
+    notes: z.string().nullable().optional(),
+  })
+  .refine((data) => Object.keys(data).length > 0, {
+    message: "At least one field must be provided",
+  });
 
 exerciseRouter.get("/", async (_req, res, next) => {
   try {
@@ -24,8 +41,16 @@ exerciseRouter.get("/:id", async (req, res, next) => {
 });
 
 exerciseRouter.post("/", async (req, res, next) => {
+  const result = createExerciseSchema.safeParse(req.body);
+  if (!result.success) {
+    return next(new ValidationError(result.error.errors[0].message));
+  }
+
   try {
-    const exercise = await createExerciseRepository().create(req.body);
+    const exercise = await createExerciseRepository().create({
+      ...result.data,
+      notes: result.data.notes ?? null,
+    });
     res.status(201).json(exercise);
   } catch (err) {
     next(err);
@@ -33,8 +58,13 @@ exerciseRouter.post("/", async (req, res, next) => {
 });
 
 exerciseRouter.patch("/:id", async (req, res, next) => {
+  const result = updateExerciseSchema.safeParse(req.body);
+  if (!result.success) {
+    return next(new ValidationError(result.error.errors[0].message));
+  }
+
   try {
-    const exercise = await createExerciseRepository().update(req.params.id, req.body);
+    const exercise = await createExerciseRepository().update(req.params.id, result.data);
     if (!exercise) throw new NotFoundError("Exercise not found");
     res.json(exercise);
   } catch (err) {

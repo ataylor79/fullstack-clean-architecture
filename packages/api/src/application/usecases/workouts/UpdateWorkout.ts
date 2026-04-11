@@ -6,6 +6,11 @@ export interface UpdateWorkoutInput {
   completedAt?: Date | null;
 }
 
-export async function updateWorkout(workoutRepo: IWorkoutRepository, id: string, input: UpdateWorkoutInput) {
-  return workoutRepo.update(id, input);
+export async function updateWorkout(
+  workoutRepo: IWorkoutRepository,
+  id: string,
+  userId: string,
+  input: UpdateWorkoutInput
+) {
+  return workoutRepo.update(id, userId, input);
 }

@@ -8,9 +8,11 @@ const REFRESH_TOKEN_BYTES = 48;
 export const REFRESH_TOKEN_TTL_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
 
 export function generateAccessToken(userId: string): string {
-  return jwt.sign({ sub: userId }, ACCESS_TOKEN_SECRET, {
-    expiresIn: ACCESS_TOKEN_TTL,
-  });
+  return jwt.sign(
+    { sub: userId, jti: crypto.randomUUID() },
+    ACCESS_TOKEN_SECRET,
+    { expiresIn: ACCESS_TOKEN_TTL }
+  );
 }
 
 export function verifyAccessToken(token: string): { sub: string } {

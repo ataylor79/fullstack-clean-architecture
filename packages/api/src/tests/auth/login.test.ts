@@ -26,7 +26,7 @@ describe("POST /auth/login", () => {
     expect(response.body.user.id).toBeDefined();
     expect(response.body.user).not.toHaveProperty("passwordHash");
     expect(typeof response.body.accessToken).toBe("string");
-    const cookies: string[] = response.headers["set-cookie"];
+    const cookies = response.headers["set-cookie"] as unknown as string[];
     expect(cookies).toBeDefined();
     expect(cookies.some((c) => c.startsWith("refreshToken="))).toBe(true);
     expect(cookies.some((c) => c.includes("HttpOnly"))).toBe(true);

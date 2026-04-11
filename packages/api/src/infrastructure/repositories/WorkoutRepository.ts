@@ -4,6 +4,7 @@ import type { Workout } from "../../domain/entities/Workout";
 
 interface WorkoutRow {
   id: string;
+  user_id: string;
   name: string;
   scheduled_at: Date;
   completed_at: Date | null;
@@ -14,6 +15,7 @@ interface WorkoutRow {
 function toEntity(row: WorkoutRow): Workout {
   return {
     id: row.id,
+    userId: row.user_id,
     name: row.name,
     scheduledAt: row.scheduled_at,
     completedAt: row.completed_at,
@@ -24,21 +26,25 @@ function toEntity(row: WorkoutRow): Workout {
 
 export function createWorkoutRepository(): IWorkoutRepository {
   return {
-    async findAll() {
+    async findAll(userId) {
       const rows = await db<WorkoutRow>("workouts")
+        .where({ user_id: userId })
         .orderBy("scheduled_at", "desc")
         .limit(100);
       return rows.map(toEntity);
     },
 
-    async findById(id) {
-      const row = await db<WorkoutRow>("workouts").where({ id }).first();
+    async findById(id, userId) {
+      const row = await db<WorkoutRow>("workouts")
+        .where({ id, user_id: userId })
+        .first();
       return row ? toEntity(row) : null;
     },
 
     async create(data) {
       const [row] = await db<WorkoutRow>("workouts")
         .insert({
+          user_id: data.userId,
           name: data.name,
           scheduled_at: data.scheduledAt,
           completed_at: data.completedAt,
@@ -47,9 +53,9 @@ export function createWorkoutRepository(): IWorkoutRepository {
       return toEntity(row);
     },
 
-    async update(id, data) {
+    async update(id, userId, data) {
       const [row] = await db<WorkoutRow>("workouts")
-        .where({ id })
+        .where({ id, user_id: userId })
         .update({
           ...(data.name !== undefined && { name: data.name }),
           ...(data.scheduledAt !== undefined && {
@@ -64,8 +70,10 @@ export function createWorkoutRepository(): IWorkoutRepository {
       return row ? toEntity(row) : null;
     },
 
-    async delete(id) {
-      const count = await db("workouts").where({ id }).delete();
+    async delete(id, userId) {
+      const count = await db("workouts")
+        .where({ id, user_id: userId })
+        .delete();
       return count > 0;
     },
   };

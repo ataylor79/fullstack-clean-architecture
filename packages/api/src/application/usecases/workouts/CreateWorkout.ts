@@ -5,6 +5,10 @@ export interface CreateWorkoutInput {
   scheduledAt: Date;
 }
 
-export async function createWorkout(workoutRepo: IWorkoutRepository, input: CreateWorkoutInput) {
-  return workoutRepo.create({ ...input, completedAt: null });
+export async function createWorkout(
+  workoutRepo: IWorkoutRepository,
+  userId: string,
+  input: CreateWorkoutInput
+) {
+  return workoutRepo.create({ ...input, userId, completedAt: null });
 }

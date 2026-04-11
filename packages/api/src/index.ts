@@ -1,6 +1,9 @@
 import "dotenv/config";
+import { validateEnv } from "./infrastructure/config";
 import { createApp } from "./presentation/app";
 import { db } from "./infrastructure/database/db";
+
+validateEnv();
 
 const PORT = process.env.PORT ?? 3000;
 

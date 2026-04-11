@@ -1,5 +1,9 @@
 import type { IWorkoutRepository } from "../../../domain/repositories/IWorkoutRepository";
 
-export async function getWorkoutById(workoutRepo: IWorkoutRepository, id: string) {
-  return workoutRepo.findById(id);
+export async function getWorkoutById(
+  workoutRepo: IWorkoutRepository,
+  id: string,
+  userId: string
+) {
+  return workoutRepo.findById(id, userId);
 }

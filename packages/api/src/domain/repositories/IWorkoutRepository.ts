@@ -1,9 +1,13 @@
-import { Workout } from "../entities/Workout";
+import type { Workout } from "../entities/Workout";
 
 export interface IWorkoutRepository {
-  findAll(): Promise<Workout[]>;
-  findById(id: string): Promise<Workout | null>;
+  findAll(userId: string): Promise<Workout[]>;
+  findById(id: string, userId: string): Promise<Workout | null>;
   create(data: Omit<Workout, "id" | "createdAt" | "updatedAt">): Promise<Workout>;
-  update(id: string, data: Partial<Omit<Workout, "id" | "createdAt" | "updatedAt">>): Promise<Workout | null>;
-  delete(id: string): Promise<boolean>;
+  update(
+    id: string,
+    userId: string,
+    data: Partial<Omit<Workout, "id" | "userId" | "createdAt" | "updatedAt">>
+  ): Promise<Workout | null>;
+  delete(id: string, userId: string): Promise<boolean>;
 }
