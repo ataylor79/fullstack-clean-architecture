@@ -1,0 +1,15 @@
+export interface IRefreshTokenRepository {
+  create(data: {
+    userId: string;
+    tokenHash: string;
+    expiresAt: Date;
+  }): Promise<void>;
+  findByTokenHash(tokenHash: string): Promise<{
+    id: string;
+    userId: string;
+    tokenHash: string;
+    expiresAt: Date;
+  } | null>;
+  deleteByTokenHash(tokenHash: string): Promise<void>;
+  deleteAllForUser(userId: string): Promise<void>;
+}
