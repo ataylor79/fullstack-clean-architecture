@@ -1,6 +1,6 @@
-import { describe, it, expect } from "vitest";
+import { createApp } from "@presentation/app";
 import supertest from "supertest";
-import { createApp } from "../../presentation/app";
+import { describe, expect, it } from "vitest";
 
 const app = createApp();
 
@@ -30,7 +30,7 @@ describe("POST /auth/refresh", () => {
     expect(cookies.some((c) => c.startsWith("refreshToken="))).toBe(true);
     expect(cookies.some((c) => c.includes("HttpOnly"))).toBe(true);
     expect(cookies.find((c) => c.startsWith("refreshToken="))).not.toBe(
-      refreshCookie
+      refreshCookie,
     );
   });
 

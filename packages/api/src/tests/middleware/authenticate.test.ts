@@ -1,6 +1,6 @@
-import { describe, it, expect } from "vitest";
+import { createApp } from "@presentation/app";
 import supertest from "supertest";
-import { createApp } from "../../presentation/app";
+import { describe, expect, it } from "vitest";
 
 const app = createApp();
 

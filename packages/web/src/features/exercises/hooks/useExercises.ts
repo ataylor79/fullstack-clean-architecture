@@ -1,6 +1,6 @@
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { exercisesApi } from "../api/exercisesApi";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { CreateExerciseDto } from "@workout-app/shared";
+import { exercisesApi } from "../api/exercisesApi";
 
 export const exerciseKeys = {
   all: ["exercises"] as const,

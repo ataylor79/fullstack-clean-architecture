@@ -1,7 +1,7 @@
 import "dotenv/config";
-import { validateEnv } from "./infrastructure/config";
-import { createApp } from "./presentation/app";
-import { db } from "./infrastructure/database/db";
+import { validateEnv } from "@infrastructure/config";
+import { db } from "@infrastructure/database/db";
+import { createApp } from "@presentation/app";
 
 validateEnv();
 

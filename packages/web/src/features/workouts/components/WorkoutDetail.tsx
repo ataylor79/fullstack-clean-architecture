@@ -6,7 +6,8 @@ export function WorkoutDetail() {
   const { data: workout, isLoading, isError } = useWorkout(workoutId);
 
   if (isLoading) return <p className="text-gray-500">Loading...</p>;
-  if (isError || !workout) return <p className="text-red-500">Workout not found.</p>;
+  if (isError || !workout)
+    return <p className="text-red-500">Workout not found.</p>;
 
   return (
     <div>

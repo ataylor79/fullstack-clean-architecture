@@ -1,9 +1,9 @@
-import type { IWorkoutRepository } from "../../../domain/repositories/IWorkoutRepository";
+import type { IWorkoutRepository } from "@domain/repositories/IWorkoutRepository";
 
 export async function getWorkoutById(
   workoutRepo: IWorkoutRepository,
   id: string,
-  userId: string
+  userId: string,
 ) {
   return workoutRepo.findById(id, userId);
 }

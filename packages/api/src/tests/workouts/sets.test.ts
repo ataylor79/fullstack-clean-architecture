@@ -1,35 +1,6 @@
-import { describe, it, expect, beforeEach } from "vitest";
-import supertest from "supertest";
-import { createApp } from "../../presentation/app";
-import { db } from "../../infrastructure/database/db";
-
-const app = createApp();
-
-async function registerAndLogin(email: string, password = "password123") {
-  const response = await supertest(app)
-    .post("/auth/register")
-    .send({ email, password });
-  const accessToken = response.body.accessToken as string;
-
-  const row = await db("email_verifications")
-    .join("users", "users.id", "email_verifications.user_id")
-    .where("users.email", email)
-    .select("email_verifications.token")
-    .first();
-  await supertest(app).get(`/auth/verify?token=${row.token}`);
-
-  return accessToken;
-}
-
-function authed(token: string) {
-  const auth = { Authorization: `Bearer ${token}` };
-  return {
-    get: (url: string) => supertest(app).get(url).set(auth),
-    post: (url: string) => supertest(app).post(url).set(auth),
-    patch: (url: string) => supertest(app).patch(url).set(auth),
-    delete: (url: string) => supertest(app).delete(url).set(auth),
-  };
-}
+import { db } from "@infrastructure/database/db";
+import { authed, registerAndLogin } from "tests/helpers/auth";
+import { beforeEach, describe, expect, it } from "vitest";
 
 const futureDate = new Date(Date.now() + 86400000).toISOString();
 
@@ -83,6 +54,31 @@ describe("POST /api/workouts/:workoutId/sets", () => {
 
     expect(response.status).toBe(404);
   });
+
+  it("returns 409 when set number already exists in the workout", async () => {
+    await authed(token)
+      .post(`/api/workouts/${workoutId}/sets`)
+      .send({ exerciseId, setNumber: 1, reps: 10, weightKg: 80 });
+
+    const response = await authed(token)
+      .post(`/api/workouts/${workoutId}/sets`)
+      .send({ exerciseId, setNumber: 1, reps: 8, weightKg: 85 });
+
+    expect(response.status).toBe(409);
+  });
+
+  it("returns 404 when exercise does not exist", async () => {
+    const response = await authed(token)
+      .post(`/api/workouts/${workoutId}/sets`)
+      .send({
+        exerciseId: "00000000-0000-0000-0000-000000000000",
+        setNumber: 1,
+        reps: 10,
+        weightKg: 80,
+      });
+
+    expect(response.status).toBe(404);
+  });
 });
 
 describe("PATCH /api/workouts/:workoutId/sets/:setId", () => {
@@ -124,7 +120,7 @@ describe("DELETE /api/workouts/:workoutId/sets/:setId", () => {
       .send({ exerciseId, setNumber: 1, reps: 10, weightKg: 80 });
 
     const response = await authed(token).delete(
-      `/api/workouts/${workoutId}/sets/${created.body.id}`
+      `/api/workouts/${workoutId}/sets/${created.body.id}`,
     );
 
     expect(response.status).toBe(204);
@@ -140,7 +136,7 @@ describe("DELETE /api/workouts/:workoutId/sets/:setId", () => {
       .send({ exerciseId, setNumber: 1, reps: 10, weightKg: 80 });
 
     const response = await authed(token).delete(
-      `/api/workouts/${otherWorkoutRes.body.id}/sets/${created.body.id}`
+      `/api/workouts/${otherWorkoutRes.body.id}/sets/${created.body.id}`,
     );
 
     expect(response.status).toBe(404);

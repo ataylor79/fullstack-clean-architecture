@@ -19,8 +19,16 @@ export async function up(knex: Knex): Promise<void> {
 
   await knex.schema.createTable("workout_sets", (t) => {
     t.uuid("id").primary().defaultTo(knex.fn.uuid());
-    t.uuid("workout_id").notNullable().references("id").inTable("workouts").onDelete("CASCADE");
-    t.uuid("exercise_id").notNullable().references("id").inTable("exercises").onDelete("RESTRICT");
+    t.uuid("workout_id")
+      .notNullable()
+      .references("id")
+      .inTable("workouts")
+      .onDelete("CASCADE");
+    t.uuid("exercise_id")
+      .notNullable()
+      .references("id")
+      .inTable("exercises")
+      .onDelete("RESTRICT");
     t.integer("set_number").notNullable();
     t.integer("reps").notNullable();
     t.decimal("weight_kg", 6, 2).notNullable();

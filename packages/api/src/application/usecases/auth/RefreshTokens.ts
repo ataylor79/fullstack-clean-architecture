@@ -1,12 +1,12 @@
-import type { IRefreshTokenRepository } from "../../../domain/repositories/IRefreshTokenRepository";
-import type { IUserRepository } from "../../../domain/repositories/IUserRepository";
+import type { IRefreshTokenRepository } from "@domain/repositories/IRefreshTokenRepository";
+import type { IUserRepository } from "@domain/repositories/IUserRepository";
 import {
   generateAccessToken,
   generateRefreshToken,
   hashToken,
   REFRESH_TOKEN_TTL_MS,
-} from "../../../infrastructure/auth/tokens";
-import { UnauthorizedError } from "../../../presentation/errors";
+} from "@infrastructure/auth/tokens";
+import { UnauthorizedError } from "@presentation/errors";
 
 type Deps = {
   userRepo: IUserRepository;

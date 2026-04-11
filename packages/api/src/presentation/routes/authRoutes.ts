@@ -1,19 +1,28 @@
-import { Router, IRouter, Request, Response, NextFunction } from "express";
-import { z } from "zod";
+import { forgotPassword } from "@application/usecases/auth/ForgotPassword";
+import { loginUser } from "@application/usecases/auth/LoginUser";
+import { refreshTokens } from "@application/usecases/auth/RefreshTokens";
+import { registerUser } from "@application/usecases/auth/RegisterUser";
+import { resendVerificationEmail } from "@application/usecases/auth/ResendVerificationEmail";
+import { resetPassword } from "@application/usecases/auth/ResetPassword";
+import { verifyEmail } from "@application/usecases/auth/VerifyEmail";
+import { hashToken, REFRESH_TOKEN_TTL_MS } from "@infrastructure/auth/tokens";
+import { createEmailService } from "@infrastructure/email";
+import { createEmailVerificationRepository } from "@infrastructure/repositories/EmailVerificationRepository";
+import { createPasswordResetRepository } from "@infrastructure/repositories/PasswordResetRepository";
+import { createRefreshTokenRepository } from "@infrastructure/repositories/RefreshTokenRepository";
+import { createUserRepository } from "@infrastructure/repositories/UserRepository";
+import { UnauthorizedError, ValidationError } from "@presentation/errors";
+import type { AuthenticatedRequest } from "@presentation/middleware/authenticate";
+import { authenticate } from "@presentation/middleware/authenticate";
+import {
+  type IRouter,
+  type NextFunction,
+  type Request,
+  type Response,
+  Router,
+} from "express";
 import rateLimit from "express-rate-limit";
-import { createUserRepository } from "../../infrastructure/repositories/UserRepository";
-import { createRefreshTokenRepository } from "../../infrastructure/repositories/RefreshTokenRepository";
-import { createEmailVerificationRepository } from "../../infrastructure/repositories/EmailVerificationRepository";
-import { createEmailService } from "../../infrastructure/email";
-import { registerUser } from "../../application/usecases/auth/RegisterUser";
-import { loginUser } from "../../application/usecases/auth/LoginUser";
-import { refreshTokens } from "../../application/usecases/auth/RefreshTokens";
-import { verifyEmail } from "../../application/usecases/auth/VerifyEmail";
-import { resendVerificationEmail } from "../../application/usecases/auth/ResendVerificationEmail";
-import { authenticate } from "../middleware/authenticate";
-import { UnauthorizedError, ValidationError } from "../errors";
-import { hashToken, REFRESH_TOKEN_TTL_MS } from "../../infrastructure/auth/tokens";
-import type { AuthenticatedRequest } from "../middleware/authenticate";
+import { z } from "zod";
 
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
@@ -27,6 +36,15 @@ export const authRouter: IRouter = Router();
 
 const registerSchema = z.object({
   email: z.string().email(),
+  password: z.string().min(8),
+});
+
+const forgotPasswordSchema = z.object({
+  email: z.string().email(),
+});
+
+const resetPasswordSchema = z.object({
+  token: z.string().min(1),
   password: z.string().min(8),
 });
 
@@ -62,7 +80,7 @@ authRouter.post(
           emailService: createEmailService(),
         },
         result.data.email,
-        result.data.password
+        result.data.password,
       );
 
       setRefreshCookie(res, refreshToken);
@@ -70,7 +88,7 @@ authRouter.post(
     } catch (err) {
       next(err);
     }
-  }
+  },
 );
 
 authRouter.post(
@@ -89,7 +107,7 @@ authRouter.post(
           refreshTokenRepo: createRefreshTokenRepository(),
         },
         result.data.email,
-        result.data.password
+        result.data.password,
       );
 
       setRefreshCookie(res, refreshToken);
@@ -97,7 +115,7 @@ authRouter.post(
     } catch (err) {
       next(err);
     }
-  }
+  },
 );
 
 authRouter.post(
@@ -114,7 +132,7 @@ authRouter.post(
           userRepo: createUserRepository(),
           refreshTokenRepo: createRefreshTokenRepository(),
         },
-        rawToken
+        rawToken,
       );
 
       setRefreshCookie(res, refreshToken);
@@ -122,7 +140,7 @@ authRouter.post(
     } catch (err) {
       next(err);
     }
-  }
+  },
 );
 
 authRouter.post(
@@ -133,7 +151,7 @@ authRouter.post(
     try {
       if (rawToken) {
         await createRefreshTokenRepository().deleteByTokenHash(
-          hashToken(rawToken)
+          hashToken(rawToken),
         );
       }
       res.clearCookie("refreshToken");
@@ -141,7 +159,7 @@ authRouter.post(
     } catch (err) {
       next(err);
     }
-  }
+  },
 );
 
 authRouter.get(
@@ -159,13 +177,13 @@ authRouter.get(
           userRepo: createUserRepository(),
           emailVerificationRepo: createEmailVerificationRepository(),
         },
-        token
+        token,
       );
       res.status(200).json({ message: "Email verified successfully" });
     } catch (err) {
       next(err);
     }
-  }
+  },
 );
 
 authRouter.get(
@@ -180,11 +198,12 @@ authRouter.get(
         id: user.id,
         email: user.email,
         emailVerifiedAt: user.emailVerifiedAt,
+        isAdmin: user.isAdmin,
       });
     } catch (err) {
       next(err);
     }
-  }
+  },
 );
 
 authRouter.post(
@@ -200,11 +219,61 @@ authRouter.post(
           emailVerificationRepo: createEmailVerificationRepository(),
           emailService: createEmailService(),
         },
-        userId
+        userId,
       );
       res.status(204).send();
     } catch (err) {
       next(err);
     }
-  }
+  },
+);
+
+authRouter.post(
+  "/forgot-password",
+  authLimiter,
+  async (req: Request, res: Response, next: NextFunction) => {
+    const result = forgotPasswordSchema.safeParse(req.body);
+    if (!result.success) {
+      return next(new ValidationError(result.error.errors[0].message));
+    }
+
+    try {
+      await forgotPassword(
+        {
+          userRepo: createUserRepository(),
+          passwordResetRepo: createPasswordResetRepository(),
+          emailService: createEmailService(),
+        },
+        result.data.email,
+      );
+      res.status(204).send();
+    } catch (err) {
+      next(err);
+    }
+  },
+);
+
+authRouter.post(
+  "/reset-password",
+  authLimiter,
+  async (req: Request, res: Response, next: NextFunction) => {
+    const result = resetPasswordSchema.safeParse(req.body);
+    if (!result.success) {
+      return next(new ValidationError(result.error.errors[0].message));
+    }
+
+    try {
+      await resetPassword(
+        {
+          userRepo: createUserRepository(),
+          passwordResetRepo: createPasswordResetRepository(),
+        },
+        result.data.token,
+        result.data.password,
+      );
+      res.status(204).send();
+    } catch (err) {
+      next(err);
+    }
+  },
 );

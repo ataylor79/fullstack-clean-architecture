@@ -1,6 +1,6 @@
-import { db } from "../database/db";
-import type { IWorkoutRepository } from "../../domain/repositories/IWorkoutRepository";
-import type { Workout } from "../../domain/entities/Workout";
+import type { Workout } from "@domain/entities/Workout";
+import type { IWorkoutRepository } from "@domain/repositories/IWorkoutRepository";
+import { db } from "@infrastructure/database/db";
 
 interface WorkoutRow {
   id: string;

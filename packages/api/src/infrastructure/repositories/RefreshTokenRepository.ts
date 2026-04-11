@@ -1,5 +1,5 @@
-import { db } from "../database/db";
-import type { IRefreshTokenRepository } from "../../domain/repositories/IRefreshTokenRepository";
+import type { IRefreshTokenRepository } from "@domain/repositories/IRefreshTokenRepository";
+import { db } from "@infrastructure/database/db";
 
 type RefreshTokenRow = {
   id: string;

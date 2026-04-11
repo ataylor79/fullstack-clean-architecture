@@ -1,15 +1,15 @@
-import argon2 from "argon2";
-import type { IUserRepository } from "../../../domain/repositories/IUserRepository";
-import type { IRefreshTokenRepository } from "../../../domain/repositories/IRefreshTokenRepository";
-import type { IEmailVerificationRepository } from "../../../domain/repositories/IEmailVerificationRepository";
-import type { IEmailService } from "../../../domain/services/IEmailService";
+import type { IEmailVerificationRepository } from "@domain/repositories/IEmailVerificationRepository";
+import type { IRefreshTokenRepository } from "@domain/repositories/IRefreshTokenRepository";
+import type { IUserRepository } from "@domain/repositories/IUserRepository";
+import type { IEmailService } from "@domain/services/IEmailService";
 import {
   generateAccessToken,
   generateRefreshToken,
   hashToken,
   REFRESH_TOKEN_TTL_MS,
-} from "../../../infrastructure/auth/tokens";
-import { ConflictError } from "../../../presentation/errors";
+} from "@infrastructure/auth/tokens";
+import { ConflictError } from "@presentation/errors";
+import argon2 from "argon2";
 import { sendVerificationEmail } from "./SendVerificationEmail";
 
 type Deps = {
@@ -22,7 +22,7 @@ type Deps = {
 export async function registerUser(
   deps: Deps,
   email: string,
-  password: string
+  password: string,
 ) {
   const existing = await deps.userRepo.findByEmail(email);
   if (existing) {
@@ -40,9 +40,12 @@ export async function registerUser(
   await deps.refreshTokenRepo.create({ userId: user.id, tokenHash, expiresAt });
 
   await sendVerificationEmail(
-    { emailVerificationRepo: deps.emailVerificationRepo, emailService: deps.emailService },
+    {
+      emailVerificationRepo: deps.emailVerificationRepo,
+      emailService: deps.emailService,
+    },
     user.id,
-    user.email
+    user.email,
   );
 
   return {

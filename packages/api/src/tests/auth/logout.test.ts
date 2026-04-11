@@ -1,6 +1,6 @@
-import { describe, it, expect } from "vitest";
+import { createApp } from "@presentation/app";
 import supertest from "supertest";
-import { createApp } from "../../presentation/app";
+import { describe, expect, it } from "vitest";
 
 const app = createApp();
 
@@ -21,7 +21,8 @@ describe("POST /auth/logout", () => {
       .set("Cookie", refreshCookie);
 
     expect(response.status).toBe(204);
-    const cookies = (response.headers["set-cookie"] as unknown as string[]) ?? [];
+    const cookies =
+      (response.headers["set-cookie"] as unknown as string[]) ?? [];
     const cleared = cookies.find((c) => c.startsWith("refreshToken="));
     expect(cleared).toContain("Expires=Thu, 01 Jan 1970");
   });

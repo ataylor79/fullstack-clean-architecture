@@ -1,8 +1,8 @@
-import type { IUserRepository } from "../../../domain/repositories/IUserRepository";
-import type { IEmailVerificationRepository } from "../../../domain/repositories/IEmailVerificationRepository";
-import type { IEmailService } from "../../../domain/services/IEmailService";
+import type { IEmailVerificationRepository } from "@domain/repositories/IEmailVerificationRepository";
+import type { IUserRepository } from "@domain/repositories/IUserRepository";
+import type { IEmailService } from "@domain/services/IEmailService";
+import { NotFoundError, ValidationError } from "@presentation/errors";
 import { sendVerificationEmail } from "./SendVerificationEmail";
-import { ValidationError, NotFoundError } from "../../../presentation/errors";
 
 type Deps = {
   userRepo: IUserRepository;
@@ -19,8 +19,11 @@ export async function resendVerificationEmail(deps: Deps, userId: string) {
   }
 
   await sendVerificationEmail(
-    { emailVerificationRepo: deps.emailVerificationRepo, emailService: deps.emailService },
+    {
+      emailVerificationRepo: deps.emailVerificationRepo,
+      emailService: deps.emailService,
+    },
     userId,
-    user.email
+    user.email,
   );
 }

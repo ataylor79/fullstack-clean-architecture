@@ -1,9 +1,9 @@
-import { beforeEach, afterAll } from "vitest";
-import { db } from "../infrastructure/database/db";
+import { db } from "@infrastructure/database/db";
+import { afterAll, beforeEach } from "vitest";
 
 beforeEach(async () => {
   await db.raw(
-    "TRUNCATE TABLE email_verifications, refresh_tokens, workout_sets, workouts, users, exercises RESTART IDENTITY CASCADE"
+    "TRUNCATE TABLE password_reset_tokens, email_verifications, refresh_tokens, workout_sets, workouts, users, exercises RESTART IDENTITY CASCADE",
   );
 });
 

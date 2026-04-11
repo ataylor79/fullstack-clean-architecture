@@ -1,7 +1,8 @@
-import { describe, it, expect } from "vitest";
+import { db } from "@infrastructure/database/db";
+import { getCapturedToken } from "@infrastructure/email";
+import { createApp } from "@presentation/app";
 import supertest from "supertest";
-import { createApp } from "../../presentation/app";
-import { db } from "../../infrastructure/database/db";
+import { describe, expect, it } from "vitest";
 
 const app = createApp();
 
@@ -15,18 +16,10 @@ async function register(email = "test@example.com", password = "password123") {
   };
 }
 
-async function getVerificationToken(email: string): Promise<string> {
-  const user = await db("users").where({ email }).first();
-  const record = await db("email_verifications")
-    .where({ user_id: user.id })
-    .first();
-  return record.token;
-}
-
 describe("GET /auth/verify", () => {
   it("marks the user as verified and returns 200", async () => {
     await register("test@example.com");
-    const token = await getVerificationToken("test@example.com");
+    const token = getCapturedToken("test@example.com")!;
 
     const response = await supertest(app).get(`/auth/verify?token=${token}`);
 
@@ -38,7 +31,7 @@ describe("GET /auth/verify", () => {
 
   it("returns 400 when token is invalid", async () => {
     const response = await supertest(app).get(
-      "/auth/verify?token=not-a-real-token"
+      "/auth/verify?token=not-a-real-token",
     );
     expect(response.status).toBe(400);
   });
@@ -50,7 +43,7 @@ describe("GET /auth/verify", () => {
 
   it("returns 400 when token has already been used", async () => {
     await register("test@example.com");
-    const token = await getVerificationToken("test@example.com");
+    const token = getCapturedToken("test@example.com")!;
 
     await supertest(app).get(`/auth/verify?token=${token}`);
     const response = await supertest(app).get(`/auth/verify?token=${token}`);
@@ -62,7 +55,7 @@ describe("GET /auth/verify", () => {
 describe("POST /auth/resend-verification", () => {
   it("creates a new verification token and returns 204", async () => {
     const { accessToken } = await register("test@example.com");
-    const oldToken = await getVerificationToken("test@example.com");
+    const oldToken = getCapturedToken("test@example.com")!;
 
     const response = await supertest(app)
       .post("/auth/resend-verification")
@@ -70,7 +63,7 @@ describe("POST /auth/resend-verification", () => {
 
     expect(response.status).toBe(204);
 
-    const newToken = await getVerificationToken("test@example.com");
+    const newToken = getCapturedToken("test@example.com")!;
     expect(newToken).not.toBe(oldToken);
   });
 
@@ -81,7 +74,7 @@ describe("POST /auth/resend-verification", () => {
 
   it("returns 400 when email is already verified", async () => {
     const { accessToken } = await register("test@example.com");
-    const token = await getVerificationToken("test@example.com");
+    const token = getCapturedToken("test@example.com")!;
     await supertest(app).get(`/auth/verify?token=${token}`);
 
     const response = await supertest(app)
@@ -109,7 +102,7 @@ describe("email verification gate on POST /api/workouts", () => {
 
   it("allows workout creation after email is verified", async () => {
     const { accessToken } = await register("test@example.com");
-    const token = await getVerificationToken("test@example.com");
+    const token = getCapturedToken("test@example.com")!;
     await supertest(app).get(`/auth/verify?token=${token}`);
 
     const response = await supertest(app)

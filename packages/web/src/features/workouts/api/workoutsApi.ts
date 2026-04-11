@@ -1,4 +1,8 @@
-import type { Workout, CreateWorkoutDto, UpdateWorkoutDto } from "@workout-app/shared";
+import type {
+  CreateWorkoutDto,
+  UpdateWorkoutDto,
+  Workout,
+} from "@workout-app/shared";
 
 const BASE = "/api/workouts";
 
@@ -18,6 +22,9 @@ export const workoutsApi = {
   create: (dto: CreateWorkoutDto) =>
     request<Workout>(BASE, { method: "POST", body: JSON.stringify(dto) }),
   update: (id: string, dto: UpdateWorkoutDto) =>
-    request<Workout>(`${BASE}/${id}`, { method: "PATCH", body: JSON.stringify(dto) }),
+    request<Workout>(`${BASE}/${id}`, {
+      method: "PATCH",
+      body: JSON.stringify(dto),
+    }),
   delete: (id: string) => request<void>(`${BASE}/${id}`, { method: "DELETE" }),
 };

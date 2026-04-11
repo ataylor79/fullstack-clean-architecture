@@ -1,10 +1,10 @@
-import { db } from "../database/db";
-import type { IEmailVerificationRepository } from "../../domain/repositories/IEmailVerificationRepository";
+import type { IEmailVerificationRepository } from "@domain/repositories/IEmailVerificationRepository";
+import { db } from "@infrastructure/database/db";
 
 type EmailVerificationRow = {
   id: string;
   user_id: string;
-  token: string;
+  token_hash: string;
   expires_at: Date;
 };
 
@@ -13,20 +13,20 @@ export function createEmailVerificationRepository(): IEmailVerificationRepositor
     async create(data) {
       await db("email_verifications").insert({
         user_id: data.userId,
-        token: data.token,
+        token_hash: data.tokenHash,
         expires_at: data.expiresAt,
       });
     },
 
-    async findByToken(token) {
+    async findByTokenHash(tokenHash) {
       const row = await db<EmailVerificationRow>("email_verifications")
-        .where({ token })
+        .where({ token_hash: tokenHash })
         .first();
       if (!row) return null;
       return {
         id: row.id,
         userId: row.user_id,
-        token: row.token,
+        tokenHash: row.token_hash,
         expiresAt: row.expires_at,
       };
     },
@@ -35,8 +35,8 @@ export function createEmailVerificationRepository(): IEmailVerificationRepositor
       await db("email_verifications").where({ user_id: userId }).delete();
     },
 
-    async deleteByToken(token) {
-      await db("email_verifications").where({ token }).delete();
+    async deleteByTokenHash(tokenHash) {
+      await db("email_verifications").where({ token_hash: tokenHash }).delete();
     },
   };
 }

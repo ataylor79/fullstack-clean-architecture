@@ -7,5 +7,8 @@ export interface Exercise {
   updatedAt: Date;
 }
 
-export type CreateExerciseDto = Pick<Exercise, "name" | "muscleGroup" | "notes">;
+export type CreateExerciseDto = Pick<
+  Exercise,
+  "name" | "muscleGroup" | "notes"
+>;
 export type UpdateExerciseDto = Partial<CreateExerciseDto>;

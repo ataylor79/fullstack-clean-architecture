@@ -1,5 +1,5 @@
-import { execSync } from "child_process";
-import path from "path";
+import { execSync } from "node:child_process";
+import path from "node:path";
 
 export async function setup() {
   const apiRoot = path.resolve(__dirname, "../..");
@@ -9,6 +9,6 @@ export async function setup() {
       cwd: apiRoot,
       env: { ...process.env, NODE_ENV: "test" },
       stdio: "inherit",
-    }
+    },
   );
 }

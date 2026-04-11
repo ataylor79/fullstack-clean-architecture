@@ -8,4 +8,6 @@ export interface Workout {
 }
 
 export type CreateWorkoutDto = Pick<Workout, "name" | "scheduledAt">;
-export type UpdateWorkoutDto = Partial<CreateWorkoutDto & Pick<Workout, "completedAt">>;
+export type UpdateWorkoutDto = Partial<
+  CreateWorkoutDto & Pick<Workout, "completedAt">
+>;

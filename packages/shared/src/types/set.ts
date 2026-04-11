@@ -14,4 +14,6 @@ export type CreateSetDto = Pick<
   WorkoutSet,
   "workoutId" | "exerciseId" | "setNumber" | "reps" | "weightKg" | "notes"
 >;
-export type UpdateSetDto = Partial<Pick<WorkoutSet, "reps" | "weightKg" | "notes">>;
+export type UpdateSetDto = Partial<
+  Pick<WorkoutSet, "reps" | "weightKg" | "notes">
+>;

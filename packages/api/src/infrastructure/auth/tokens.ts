@@ -1,5 +1,5 @@
+import crypto from "node:crypto";
 import jwt from "jsonwebtoken";
-import crypto from "crypto";
 
 const ACCESS_TOKEN_SECRET =
   process.env.ACCESS_TOKEN_SECRET ?? "dev-access-secret";
@@ -11,7 +11,7 @@ export function generateAccessToken(userId: string): string {
   return jwt.sign(
     { sub: userId, jti: crypto.randomUUID() },
     ACCESS_TOKEN_SECRET,
-    { expiresIn: ACCESS_TOKEN_TTL }
+    { expiresIn: ACCESS_TOKEN_TTL },
   );
 }
 

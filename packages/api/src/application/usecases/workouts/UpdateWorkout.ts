@@ -1,4 +1,5 @@
-import type { IWorkoutRepository } from "../../../domain/repositories/IWorkoutRepository";
+import type { IWorkoutRepository } from "@domain/repositories/IWorkoutRepository";
+import { NotFoundError, ValidationError } from "@presentation/errors";
 
 export interface UpdateWorkoutInput {
   name?: string;
@@ -10,7 +11,17 @@ export async function updateWorkout(
   workoutRepo: IWorkoutRepository,
   id: string,
   userId: string,
-  input: UpdateWorkoutInput
+  input: UpdateWorkoutInput,
 ) {
+  if (input.completedAt != null) {
+    const workout = await workoutRepo.findById(id, userId);
+    if (!workout) throw new NotFoundError("Workout not found");
+
+    const effectiveScheduledAt = input.scheduledAt ?? workout.scheduledAt;
+    if (input.completedAt < effectiveScheduledAt) {
+      throw new ValidationError("completedAt cannot be before scheduledAt");
+    }
+  }
+
   return workoutRepo.update(id, userId, input);
 }

@@ -1,4 +1,4 @@
-import type { IWorkoutRepository } from "../../../domain/repositories/IWorkoutRepository";
+import type { IWorkoutRepository } from "@domain/repositories/IWorkoutRepository";
 
 export interface CreateWorkoutInput {
   name: string;
@@ -8,7 +8,7 @@ export interface CreateWorkoutInput {
 export async function createWorkout(
   workoutRepo: IWorkoutRepository,
   userId: string,
-  input: CreateWorkoutInput
+  input: CreateWorkoutInput,
 ) {
   return workoutRepo.create({ ...input, userId, completedAt: null });
 }

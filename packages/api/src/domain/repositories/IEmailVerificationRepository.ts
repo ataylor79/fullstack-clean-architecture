@@ -1,11 +1,15 @@
 export interface IEmailVerificationRepository {
-  create(data: { userId: string; token: string; expiresAt: Date }): Promise<void>;
-  findByToken(token: string): Promise<{
+  create(data: {
+    userId: string;
+    tokenHash: string;
+    expiresAt: Date;
+  }): Promise<void>;
+  findByTokenHash(tokenHash: string): Promise<{
     id: string;
     userId: string;
-    token: string;
+    tokenHash: string;
     expiresAt: Date;
   } | null>;
   deleteByUserId(userId: string): Promise<void>;
-  deleteByToken(token: string): Promise<void>;
+  deleteByTokenHash(tokenHash: string): Promise<void>;
 }

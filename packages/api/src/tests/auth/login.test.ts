@@ -1,12 +1,12 @@
-import { describe, it, expect, beforeEach } from "vitest";
+import { createApp } from "@presentation/app";
 import supertest from "supertest";
-import { createApp } from "../../presentation/app";
+import { beforeEach, describe, expect, it } from "vitest";
 
 const app = createApp();
 
 async function registerUser(
   email = "test@example.com",
-  password = "password123"
+  password = "password123",
 ) {
   await supertest(app).post("/auth/register").send({ email, password });
 }

@@ -1,18 +1,19 @@
-import { Router, IRouter, Request } from "express";
+import { createSet } from "@application/usecases/sets/CreateSet";
+import { deleteSet } from "@application/usecases/sets/DeleteSet";
+import { updateSet } from "@application/usecases/sets/UpdateSet";
+import { createWorkout } from "@application/usecases/workouts/CreateWorkout";
+import { deleteWorkout } from "@application/usecases/workouts/DeleteWorkout";
+import { getWorkoutById } from "@application/usecases/workouts/GetWorkoutById";
+import { getWorkouts } from "@application/usecases/workouts/GetWorkouts";
+import { updateWorkout } from "@application/usecases/workouts/UpdateWorkout";
+import { createExerciseRepository } from "@infrastructure/repositories/ExerciseRepository";
+import { createSetRepository } from "@infrastructure/repositories/SetRepository";
+import { createWorkoutRepository } from "@infrastructure/repositories/WorkoutRepository";
+import { NotFoundError, ValidationError } from "@presentation/errors";
+import type { AuthenticatedRequest } from "@presentation/middleware/authenticate";
+import { requireEmailVerified } from "@presentation/middleware/requireEmailVerified";
+import { type IRouter, type Request, Router } from "express";
 import { z } from "zod";
-import { createWorkoutRepository } from "../../infrastructure/repositories/WorkoutRepository";
-import { createSetRepository } from "../../infrastructure/repositories/SetRepository";
-import { getWorkouts } from "../../application/usecases/workouts/GetWorkouts";
-import { getWorkoutById } from "../../application/usecases/workouts/GetWorkoutById";
-import { createWorkout } from "../../application/usecases/workouts/CreateWorkout";
-import { updateWorkout } from "../../application/usecases/workouts/UpdateWorkout";
-import { deleteWorkout } from "../../application/usecases/workouts/DeleteWorkout";
-import { createSet } from "../../application/usecases/sets/CreateSet";
-import { updateSet } from "../../application/usecases/sets/UpdateSet";
-import { deleteSet } from "../../application/usecases/sets/DeleteSet";
-import { NotFoundError, ValidationError } from "../errors";
-import type { AuthenticatedRequest } from "../middleware/authenticate";
-import { requireEmailVerified } from "../middleware/requireEmailVerified";
 
 export const workoutRouter: IRouter = Router();
 
@@ -61,7 +62,7 @@ workoutRouter.get("/:id", async (req: Request, res, next) => {
     const workout = await getWorkoutById(
       createWorkoutRepository(),
       req.params.id,
-      userId
+      userId,
     );
     if (!workout) throw new NotFoundError("Workout not found");
 
@@ -72,23 +73,27 @@ workoutRouter.get("/:id", async (req: Request, res, next) => {
   }
 });
 
-workoutRouter.post("/", requireEmailVerified, async (req: Request, res, next) => {
-  const result = createWorkoutSchema.safeParse(req.body);
-  if (!result.success) {
-    return next(new ValidationError(result.error.errors[0].message));
-  }
+workoutRouter.post(
+  "/",
+  requireEmailVerified,
+  async (req: Request, res, next) => {
+    const result = createWorkoutSchema.safeParse(req.body);
+    if (!result.success) {
+      return next(new ValidationError(result.error.errors[0].message));
+    }
 
-  try {
-    const { userId } = req as AuthenticatedRequest;
-    const workout = await createWorkout(createWorkoutRepository(), userId, {
-      name: result.data.name,
-      scheduledAt: new Date(result.data.scheduledAt),
-    });
-    res.status(201).json(workout);
-  } catch (err) {
-    next(err);
-  }
-});
+    try {
+      const { userId } = req as AuthenticatedRequest;
+      const workout = await createWorkout(createWorkoutRepository(), userId, {
+        name: result.data.name,
+        scheduledAt: new Date(result.data.scheduledAt),
+      });
+      res.status(201).json(workout);
+    } catch (err) {
+      next(err);
+    }
+  },
+);
 
 workoutRouter.patch("/:id", async (req: Request, res, next) => {
   const result = updateWorkoutSchema.safeParse(req.body);
@@ -104,14 +109,16 @@ workoutRouter.patch("/:id", async (req: Request, res, next) => {
         scheduledAt: new Date(result.data.scheduledAt),
       }),
       ...(result.data.completedAt !== undefined && {
-        completedAt: result.data.completedAt ? new Date(result.data.completedAt) : null,
+        completedAt: result.data.completedAt
+          ? new Date(result.data.completedAt)
+          : null,
       }),
     };
     const workout = await updateWorkout(
       createWorkoutRepository(),
       req.params.id,
       userId,
-      data
+      data,
     );
     if (!workout) throw new NotFoundError("Workout not found");
     res.json(workout);
@@ -126,7 +133,7 @@ workoutRouter.delete("/:id", async (req: Request, res, next) => {
     const deleted = await deleteWorkout(
       createWorkoutRepository(),
       req.params.id,
-      userId
+      userId,
     );
     if (!deleted) throw new NotFoundError("Workout not found");
     res.status(204).send();
@@ -148,9 +155,10 @@ workoutRouter.post("/:workoutId/sets", async (req: Request, res, next) => {
     const set = await createSet(
       createWorkoutRepository(),
       createSetRepository(),
+      createExerciseRepository(),
       req.params.workoutId,
       userId,
-      result.data
+      result.data,
     );
     res.status(201).json(set);
   } catch (err) {
@@ -158,40 +166,46 @@ workoutRouter.post("/:workoutId/sets", async (req: Request, res, next) => {
   }
 });
 
-workoutRouter.patch("/:workoutId/sets/:setId", async (req: Request, res, next) => {
-  const result = updateSetSchema.safeParse(req.body);
-  if (!result.success) {
-    return next(new ValidationError(result.error.errors[0].message));
-  }
+workoutRouter.patch(
+  "/:workoutId/sets/:setId",
+  async (req: Request, res, next) => {
+    const result = updateSetSchema.safeParse(req.body);
+    if (!result.success) {
+      return next(new ValidationError(result.error.errors[0].message));
+    }
 
-  try {
-    const { userId } = req as AuthenticatedRequest;
-    const set = await updateSet(
-      createWorkoutRepository(),
-      createSetRepository(),
-      req.params.workoutId,
-      req.params.setId,
-      userId,
-      result.data
-    );
-    res.json(set);
-  } catch (err) {
-    next(err);
-  }
-});
+    try {
+      const { userId } = req as AuthenticatedRequest;
+      const set = await updateSet(
+        createWorkoutRepository(),
+        createSetRepository(),
+        req.params.workoutId,
+        req.params.setId,
+        userId,
+        result.data,
+      );
+      res.json(set);
+    } catch (err) {
+      next(err);
+    }
+  },
+);
 
-workoutRouter.delete("/:workoutId/sets/:setId", async (req: Request, res, next) => {
-  try {
-    const { userId } = req as AuthenticatedRequest;
-    await deleteSet(
-      createWorkoutRepository(),
-      createSetRepository(),
-      req.params.workoutId,
-      req.params.setId,
-      userId
-    );
-    res.status(204).send();
-  } catch (err) {
-    next(err);
-  }
-});
+workoutRouter.delete(
+  "/:workoutId/sets/:setId",
+  async (req: Request, res, next) => {
+    try {
+      const { userId } = req as AuthenticatedRequest;
+      await deleteSet(
+        createWorkoutRepository(),
+        createSetRepository(),
+        req.params.workoutId,
+        req.params.setId,
+        userId,
+      );
+      res.status(204).send();
+    } catch (err) {
+      next(err);
+    }
+  },
+);

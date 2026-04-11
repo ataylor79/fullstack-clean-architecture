@@ -1,6 +1,9 @@
-import { db } from "../database/db";
-import type { ISetRepository, WorkoutSetWithExercise } from "../../domain/repositories/ISetRepository";
-import type { WorkoutSet } from "../../domain/entities/Set";
+import type { WorkoutSet } from "@domain/entities/Set";
+import type {
+  ISetRepository,
+  WorkoutSetWithExercise,
+} from "@domain/repositories/ISetRepository";
+import { db } from "@infrastructure/database/db";
 
 interface SetRow {
   id: string;
@@ -43,7 +46,7 @@ export function createSetRepository(): ISetRepository {
         .select(
           "workout_sets.*",
           "exercises.name as exercise_name",
-          "exercises.muscle_group as exercise_muscle_group"
+          "exercises.muscle_group as exercise_muscle_group",
         );
 
       return rows.map((row) => ({
@@ -80,7 +83,9 @@ export function createSetRepository(): ISetRepository {
       const [row] = await db("workout_sets")
         .where({ id, workout_id: workoutId })
         .update({
-          ...(data.exerciseId !== undefined && { exercise_id: data.exerciseId }),
+          ...(data.exerciseId !== undefined && {
+            exercise_id: data.exerciseId,
+          }),
           ...(data.setNumber !== undefined && { set_number: data.setNumber }),
           ...(data.reps !== undefined && { reps: data.reps }),
           ...(data.weightKg !== undefined && { weight_kg: data.weightKg }),

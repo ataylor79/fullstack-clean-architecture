@@ -1,12 +1,13 @@
-import { db } from "../database/db";
-import type { IUserRepository } from "../../domain/repositories/IUserRepository";
-import type { User } from "../../domain/entities/User";
+import type { User } from "@domain/entities/User";
+import type { IUserRepository } from "@domain/repositories/IUserRepository";
+import { db } from "@infrastructure/database/db";
 
 type UserRow = {
   id: string;
   email: string;
   password_hash: string;
   email_verified_at: Date | null;
+  is_admin: boolean;
   created_at: Date;
   updated_at: Date;
 };
@@ -17,6 +18,7 @@ function toUser(row: UserRow): User {
     email: row.email,
     passwordHash: row.password_hash,
     emailVerifiedAt: row.email_verified_at,
+    isAdmin: row.is_admin,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
@@ -45,6 +47,12 @@ export function createUserRepository(): IUserRepository {
       await db("users")
         .where({ id })
         .update({ email_verified_at: new Date(), updated_at: new Date() });
+    },
+
+    async updatePassword(id, passwordHash) {
+      await db("users")
+        .where({ id })
+        .update({ password_hash: passwordHash, updated_at: new Date() });
     },
   };
 }

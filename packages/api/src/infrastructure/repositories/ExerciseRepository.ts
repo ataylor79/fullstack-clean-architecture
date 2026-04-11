@@ -1,6 +1,6 @@
-import { db } from "../database/db";
-import type { IExerciseRepository } from "../../domain/repositories/IExerciseRepository";
-import type { Exercise } from "../../domain/entities/Exercise";
+import type { Exercise } from "@domain/entities/Exercise";
+import type { IExerciseRepository } from "@domain/repositories/IExerciseRepository";
+import { db } from "@infrastructure/database/db";
 
 interface ExerciseRow {
   id: string;
@@ -38,7 +38,11 @@ export function createExerciseRepository(): IExerciseRepository {
 
     async create(data) {
       const [row] = await db<ExerciseRow>("exercises")
-        .insert({ name: data.name, muscle_group: data.muscleGroup, notes: data.notes })
+        .insert({
+          name: data.name,
+          muscle_group: data.muscleGroup,
+          notes: data.notes,
+        })
         .returning("*");
       return toEntity(row);
     },

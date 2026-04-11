@@ -23,17 +23,37 @@ const setIdParam: OpenAPIV3.ParameterObject = {
 
 const notFound: OpenAPIV3.ResponseObject = {
   description: "Not found",
-  content: { "application/json": { schema: { $ref: "#/components/schemas/Error" } } },
+  content: {
+    "application/json": { schema: { $ref: "#/components/schemas/Error" } },
+  },
 };
 
 const unauthorized: OpenAPIV3.ResponseObject = {
   description: "Unauthorized",
-  content: { "application/json": { schema: { $ref: "#/components/schemas/Error" } } },
+  content: {
+    "application/json": { schema: { $ref: "#/components/schemas/Error" } },
+  },
 };
 
 const badRequest: OpenAPIV3.ResponseObject = {
   description: "Bad request",
-  content: { "application/json": { schema: { $ref: "#/components/schemas/Error" } } },
+  content: {
+    "application/json": { schema: { $ref: "#/components/schemas/Error" } },
+  },
+};
+
+const forbidden: OpenAPIV3.ResponseObject = {
+  description: "Forbidden",
+  content: {
+    "application/json": { schema: { $ref: "#/components/schemas/Error" } },
+  },
+};
+
+const conflict: OpenAPIV3.ResponseObject = {
+  description: "Conflict",
+  content: {
+    "application/json": { schema: { $ref: "#/components/schemas/Error" } },
+  },
 };
 
 const bearerAuth: OpenAPIV3.SecurityRequirementObject[] = [{ bearerAuth: [] }];
@@ -59,7 +79,12 @@ export const openApiSpec: OpenAPIV3.Document = {
         properties: {
           id: { type: "string", format: "uuid" },
           email: { type: "string", format: "email" },
-          emailVerifiedAt: { type: "string", format: "date-time", nullable: true },
+          emailVerifiedAt: {
+            type: "string",
+            format: "date-time",
+            nullable: true,
+          },
+          isAdmin: { type: "boolean" },
         },
       },
       Workout: {
@@ -227,7 +252,7 @@ export const openApiSpec: OpenAPIV3.Document = {
             },
           },
           400: badRequest,
-          409: { description: "Email already registered" },
+          409: conflict,
         },
       },
     },
@@ -304,12 +329,69 @@ export const openApiSpec: OpenAPIV3.Document = {
         summary: "Verify email address",
         tags: ["Auth"],
         parameters: [
-          { in: "query", name: "token", required: true, schema: { type: "string" } },
+          {
+            in: "query",
+            name: "token",
+            required: true,
+            schema: { type: "string" },
+          },
         ],
         responses: {
           200: { description: "Email verified successfully" },
           400: badRequest,
           404: notFound,
+        },
+      },
+    },
+    "/auth/forgot-password": {
+      post: {
+        summary: "Request a password reset email",
+        tags: ["Auth"],
+        requestBody: {
+          required: true,
+          content: {
+            "application/json": {
+              schema: {
+                type: "object",
+                required: ["email"],
+                properties: {
+                  email: { type: "string", format: "email" },
+                },
+              },
+            },
+          },
+        },
+        responses: {
+          204: {
+            description:
+              "Reset email sent if the address is registered (always 204 to prevent user enumeration)",
+          },
+          400: badRequest,
+        },
+      },
+    },
+    "/auth/reset-password": {
+      post: {
+        summary: "Reset password using a token from the reset email",
+        tags: ["Auth"],
+        requestBody: {
+          required: true,
+          content: {
+            "application/json": {
+              schema: {
+                type: "object",
+                required: ["token", "password"],
+                properties: {
+                  token: { type: "string" },
+                  password: { type: "string", minLength: 8 },
+                },
+              },
+            },
+          },
+        },
+        responses: {
+          204: { description: "Password reset successfully" },
+          400: badRequest,
         },
       },
     },
@@ -320,7 +402,7 @@ export const openApiSpec: OpenAPIV3.Document = {
         security: bearerAuth,
         responses: {
           204: { description: "Verification email sent" },
-          400: { description: "Email already verified" },
+          400: badRequest,
           401: unauthorized,
         },
       },
@@ -334,7 +416,9 @@ export const openApiSpec: OpenAPIV3.Document = {
           200: {
             description: "Current user",
             content: {
-              "application/json": { schema: { $ref: "#/components/schemas/User" } },
+              "application/json": {
+                schema: { $ref: "#/components/schemas/User" },
+              },
             },
           },
           401: unauthorized,
@@ -351,7 +435,10 @@ export const openApiSpec: OpenAPIV3.Document = {
             description: "Array of workouts",
             content: {
               "application/json": {
-                schema: { type: "array", items: { $ref: "#/components/schemas/Workout" } },
+                schema: {
+                  type: "array",
+                  items: { $ref: "#/components/schemas/Workout" },
+                },
               },
             },
           },
@@ -365,19 +452,23 @@ export const openApiSpec: OpenAPIV3.Document = {
         requestBody: {
           required: true,
           content: {
-            "application/json": { schema: { $ref: "#/components/schemas/CreateWorkoutBody" } },
+            "application/json": {
+              schema: { $ref: "#/components/schemas/CreateWorkoutBody" },
+            },
           },
         },
         responses: {
           201: {
             description: "Created workout",
             content: {
-              "application/json": { schema: { $ref: "#/components/schemas/Workout" } },
+              "application/json": {
+                schema: { $ref: "#/components/schemas/Workout" },
+              },
             },
           },
           400: badRequest,
           401: unauthorized,
-          403: { description: "Email verification required" },
+          403: forbidden,
         },
       },
     },
@@ -391,7 +482,9 @@ export const openApiSpec: OpenAPIV3.Document = {
           200: {
             description: "Workout with sets",
             content: {
-              "application/json": { schema: { $ref: "#/components/schemas/WorkoutDetail" } },
+              "application/json": {
+                schema: { $ref: "#/components/schemas/WorkoutDetail" },
+              },
             },
           },
           401: unauthorized,
@@ -406,14 +499,18 @@ export const openApiSpec: OpenAPIV3.Document = {
         requestBody: {
           required: true,
           content: {
-            "application/json": { schema: { $ref: "#/components/schemas/UpdateWorkoutBody" } },
+            "application/json": {
+              schema: { $ref: "#/components/schemas/UpdateWorkoutBody" },
+            },
           },
         },
         responses: {
           200: {
             description: "Updated workout",
             content: {
-              "application/json": { schema: { $ref: "#/components/schemas/Workout" } },
+              "application/json": {
+                schema: { $ref: "#/components/schemas/Workout" },
+              },
             },
           },
           400: badRequest,
@@ -442,19 +539,24 @@ export const openApiSpec: OpenAPIV3.Document = {
         requestBody: {
           required: true,
           content: {
-            "application/json": { schema: { $ref: "#/components/schemas/CreateSetBody" } },
+            "application/json": {
+              schema: { $ref: "#/components/schemas/CreateSetBody" },
+            },
           },
         },
         responses: {
           201: {
             description: "Created set",
             content: {
-              "application/json": { schema: { $ref: "#/components/schemas/WorkoutSet" } },
+              "application/json": {
+                schema: { $ref: "#/components/schemas/WorkoutSet" },
+              },
             },
           },
           400: badRequest,
           401: unauthorized,
           404: notFound,
+          409: conflict,
         },
       },
     },
@@ -467,14 +569,18 @@ export const openApiSpec: OpenAPIV3.Document = {
         requestBody: {
           required: true,
           content: {
-            "application/json": { schema: { $ref: "#/components/schemas/UpdateSetBody" } },
+            "application/json": {
+              schema: { $ref: "#/components/schemas/UpdateSetBody" },
+            },
           },
         },
         responses: {
           200: {
             description: "Updated set",
             content: {
-              "application/json": { schema: { $ref: "#/components/schemas/WorkoutSet" } },
+              "application/json": {
+                schema: { $ref: "#/components/schemas/WorkoutSet" },
+              },
             },
           },
           400: badRequest,
@@ -504,7 +610,10 @@ export const openApiSpec: OpenAPIV3.Document = {
             description: "Array of exercises",
             content: {
               "application/json": {
-                schema: { type: "array", items: { $ref: "#/components/schemas/Exercise" } },
+                schema: {
+                  type: "array",
+                  items: { $ref: "#/components/schemas/Exercise" },
+                },
               },
             },
           },
@@ -512,24 +621,30 @@ export const openApiSpec: OpenAPIV3.Document = {
         },
       },
       post: {
-        summary: "Create an exercise",
+        summary: "Create an exercise (admin only)",
         tags: ["Exercises"],
         security: bearerAuth,
         requestBody: {
           required: true,
           content: {
-            "application/json": { schema: { $ref: "#/components/schemas/CreateExerciseBody" } },
+            "application/json": {
+              schema: { $ref: "#/components/schemas/CreateExerciseBody" },
+            },
           },
         },
         responses: {
           201: {
             description: "Created exercise",
             content: {
-              "application/json": { schema: { $ref: "#/components/schemas/Exercise" } },
+              "application/json": {
+                schema: { $ref: "#/components/schemas/Exercise" },
+              },
             },
           },
           400: badRequest,
           401: unauthorized,
+          403: forbidden,
+          409: conflict,
         },
       },
     },
@@ -543,7 +658,9 @@ export const openApiSpec: OpenAPIV3.Document = {
           200: {
             description: "The exercise",
             content: {
-              "application/json": { schema: { $ref: "#/components/schemas/Exercise" } },
+              "application/json": {
+                schema: { $ref: "#/components/schemas/Exercise" },
+              },
             },
           },
           401: unauthorized,
@@ -551,36 +668,43 @@ export const openApiSpec: OpenAPIV3.Document = {
         },
       },
       patch: {
-        summary: "Update an exercise",
+        summary: "Update an exercise (admin only)",
         tags: ["Exercises"],
         security: bearerAuth,
         parameters: [idParam],
         requestBody: {
           required: true,
           content: {
-            "application/json": { schema: { $ref: "#/components/schemas/UpdateExerciseBody" } },
+            "application/json": {
+              schema: { $ref: "#/components/schemas/UpdateExerciseBody" },
+            },
           },
         },
         responses: {
           200: {
             description: "Updated exercise",
             content: {
-              "application/json": { schema: { $ref: "#/components/schemas/Exercise" } },
+              "application/json": {
+                schema: { $ref: "#/components/schemas/Exercise" },
+              },
             },
           },
           400: badRequest,
           401: unauthorized,
+          403: forbidden,
           404: notFound,
+          409: conflict,
         },
       },
       delete: {
-        summary: "Delete an exercise",
+        summary: "Delete an exercise (admin only)",
         tags: ["Exercises"],
         security: bearerAuth,
         parameters: [idParam],
         responses: {
           204: { description: "Deleted successfully" },
           401: unauthorized,
+          403: forbidden,
           404: notFound,
         },
       },

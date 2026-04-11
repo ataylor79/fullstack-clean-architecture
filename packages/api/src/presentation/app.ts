@@ -1,13 +1,13 @@
-import express, { type Application } from "express";
-import cors from "cors";
 import cookieParser from "cookie-parser";
+import cors from "cors";
+import express, { type Application } from "express";
 import swaggerUi from "swagger-ui-express";
-import { authRouter } from "./routes/authRoutes";
-import { workoutRouter } from "./routes/workoutRoutes";
-import { exerciseRouter } from "./routes/exerciseRoutes";
 import { authenticate } from "./middleware/authenticate";
 import { errorHandler } from "./middleware/errorHandler";
 import { openApiSpec } from "./openapi";
+import { authRouter } from "./routes/authRoutes";
+import { exerciseRouter } from "./routes/exerciseRoutes";
+import { workoutRouter } from "./routes/workoutRoutes";
 
 export function createApp(): Application {
   const app = express();
@@ -26,7 +26,7 @@ export function createApp(): Application {
         callback(new Error(`Origin ${origin} not allowed by CORS`));
       },
       credentials: true,
-    })
+    }),
   );
   app.use(express.json());
   app.use(cookieParser());
