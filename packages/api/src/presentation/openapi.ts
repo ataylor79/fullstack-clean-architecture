@@ -87,11 +87,22 @@ export const openApiSpec: OpenAPIV3.Document = {
           isAdmin: { type: "boolean" },
         },
       },
+      WorkoutDifficulty: {
+        type: "string",
+        enum: ["beginner", "intermediate", "advanced", "elite"],
+      },
+      WorkoutType: {
+        type: "string",
+        enum: ["strength", "cardio", "hiit", "yoga", "pilates", "mobility", "hybrid"],
+      },
       Workout: {
         type: "object",
         properties: {
           id: { type: "string", format: "uuid" },
           name: { type: "string" },
+          durationMinutes: { type: "integer", minimum: 1 },
+          difficulty: { $ref: "#/components/schemas/WorkoutDifficulty" },
+          type: { $ref: "#/components/schemas/WorkoutType" },
           scheduledAt: { type: "string", format: "date-time" },
           completedAt: { type: "string", format: "date-time", nullable: true },
           createdAt: { type: "string", format: "date-time" },
@@ -156,9 +167,12 @@ export const openApiSpec: OpenAPIV3.Document = {
       },
       CreateWorkoutBody: {
         type: "object",
-        required: ["name", "scheduledAt"],
+        required: ["name", "durationMinutes", "difficulty", "type", "scheduledAt"],
         properties: {
           name: { type: "string", example: "Monday Push" },
+          durationMinutes: { type: "integer", minimum: 1, example: 45 },
+          difficulty: { $ref: "#/components/schemas/WorkoutDifficulty" },
+          type: { $ref: "#/components/schemas/WorkoutType" },
           scheduledAt: { type: "string", format: "date-time" },
         },
       },
@@ -166,6 +180,9 @@ export const openApiSpec: OpenAPIV3.Document = {
         type: "object",
         properties: {
           name: { type: "string" },
+          durationMinutes: { type: "integer", minimum: 1 },
+          difficulty: { $ref: "#/components/schemas/WorkoutDifficulty" },
+          type: { $ref: "#/components/schemas/WorkoutType" },
           scheduledAt: { type: "string", format: "date-time" },
           completedAt: { type: "string", format: "date-time", nullable: true },
         },
