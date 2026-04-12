@@ -11,10 +11,16 @@ describe("GET /api/workouts", () => {
     await authed( tokenA).post("/api/workouts").send({
       name: "User A Workout",
       scheduledAt: futureDate,
+      durationMinutes: 15,
+      difficulty: "intermediate",
+      type: "strength" 
     });
     await authed( tokenB).post("/api/workouts").send({
       name: "User B Workout",
       scheduledAt: futureDate,
+      durationMinutes: 15,
+      difficulty: "intermediate",
+      type: "strength" 
     });
 
     const response = await authed( tokenA).get("/api/workouts");
@@ -32,6 +38,9 @@ describe("POST /api/workouts", () => {
     const response = await authed( token).post("/api/workouts").send({
       name: "Morning Session",
       scheduledAt: futureDate,
+      durationMinutes: 15,
+      difficulty: "intermediate",
+      type: "strength" 
     });
 
     expect(response.status).toBe(201);
@@ -66,7 +75,11 @@ describe("GET /api/workouts/:id", () => {
     const token = await registerAndLogin( "user@example.com");
     const created = await authed( token)
       .post("/api/workouts")
-      .send({ name: "Leg Day", scheduledAt: futureDate });
+      .send({ name: "Leg Day", 
+        scheduledAt: futureDate, 
+        durationMinutes: 15,
+        difficulty: "intermediate",
+        type: "strength"  });
 
     const response = await authed( token).get(
       `/api/workouts/${created.body.id}`,
@@ -82,7 +95,9 @@ describe("GET /api/workouts/:id", () => {
 
     const created = await authed( tokenA)
       .post("/api/workouts")
-      .send({ name: "Private Workout", scheduledAt: futureDate });
+      .send({ name: "Private Workout", scheduledAt: futureDate,  durationMinutes: 15,
+        difficulty: "intermediate",
+        type: "strength"  });
 
     const response = await authed( tokenB).get(
       `/api/workouts/${created.body.id}`,
@@ -105,7 +120,9 @@ describe("PATCH /api/workouts/:id", () => {
     const token = await registerAndLogin( "user@example.com");
     const created = await authed( token)
       .post("/api/workouts")
-      .send({ name: "Old Name", scheduledAt: futureDate });
+      .send({ name: "Old Name", scheduledAt: futureDate,  durationMinutes: 15,
+        difficulty: "intermediate",
+        type: "strength"  });
 
     const response = await authed( token)
       .patch(`/api/workouts/${created.body.id}`)
@@ -121,7 +138,9 @@ describe("PATCH /api/workouts/:id", () => {
 
     const created = await authed( tokenA)
       .post("/api/workouts")
-      .send({ name: "My Workout", scheduledAt: futureDate });
+      .send({ name: "My Workout", scheduledAt: futureDate,  durationMinutes: 15,
+        difficulty: "intermediate",
+        type: "strength"  });
 
     const response = await authed( tokenB)
       .patch(`/api/workouts/${created.body.id}`)
@@ -135,7 +154,9 @@ describe("PATCH /api/workouts/:id", () => {
     const scheduledAt = new Date(Date.now() - 7200000).toISOString(); // 2 hours ago
     const created = await authed( token)
       .post("/api/workouts")
-      .send({ name: "Morning Session", scheduledAt });
+      .send({ name: "Morning Session", scheduledAt,  durationMinutes: 15,
+        difficulty: "intermediate",
+        type: "strength"  });
 
     const completedAt = new Date(Date.now() - 3600000).toISOString(); // 1 hour ago
     const response = await authed( token)
@@ -151,7 +172,9 @@ describe("PATCH /api/workouts/:id", () => {
     const scheduledAt = new Date(Date.now() - 3600000).toISOString(); // 1 hour ago
     const created = await authed( token)
       .post("/api/workouts")
-      .send({ name: "Morning Session", scheduledAt });
+      .send({ name: "Morning Session", scheduledAt,  durationMinutes: 15,
+        difficulty: "intermediate",
+        type: "strength"  });
 
     const completedAt = new Date(Date.now() - 7200000).toISOString(); // 2 hours ago, before scheduledAt
     const response = await authed( token)
@@ -167,7 +190,9 @@ describe("DELETE /api/workouts/:id", () => {
     const token = await registerAndLogin( "user@example.com");
     const created = await authed( token)
       .post("/api/workouts")
-      .send({ name: "To Delete", scheduledAt: futureDate });
+      .send({ name: "To Delete", scheduledAt: futureDate,  durationMinutes: 15,
+        difficulty: "intermediate",
+        type: "strength"  });
 
     const response = await authed( token).delete(
       `/api/workouts/${created.body.id}`,
@@ -182,7 +207,9 @@ describe("DELETE /api/workouts/:id", () => {
 
     const created = await authed( tokenA)
       .post("/api/workouts")
-      .send({ name: "My Workout", scheduledAt: futureDate });
+      .send({ name: "My Workout", scheduledAt: futureDate,  durationMinutes: 15,
+        difficulty: "intermediate",
+        type: "strength"  });
 
     const response = await authed( tokenB).delete(
       `/api/workouts/${created.body.id}`,

@@ -6,6 +6,7 @@ import { deleteWorkout } from "@application/usecases/workouts/DeleteWorkout";
 import { getWorkoutById } from "@application/usecases/workouts/GetWorkoutById";
 import { getWorkouts } from "@application/usecases/workouts/GetWorkouts";
 import { updateWorkout } from "@application/usecases/workouts/UpdateWorkout";
+import { WorkoutDifficulty, WorkoutType } from "@domain/entities/Workout";
 import { createExerciseRepository } from "@infrastructure/repositories/ExerciseRepository";
 import { createSetRepository } from "@infrastructure/repositories/SetRepository";
 import { createWorkoutRepository } from "@infrastructure/repositories/WorkoutRepository";
@@ -19,6 +20,9 @@ export const workoutRouter: IRouter = Router();
 
 const createWorkoutSchema = z.object({
   name: z.string().min(1),
+  durationMinutes: z.number().int().positive(),
+  difficulty: z.nativeEnum(WorkoutDifficulty),
+  type: z.nativeEnum(WorkoutType),
   scheduledAt: z.string().datetime(),
 });
 
@@ -26,6 +30,9 @@ const updateWorkoutSchema = z.object({
   name: z.string().min(1).optional(),
   scheduledAt: z.string().datetime().optional(),
   completedAt: z.string().datetime().nullable().optional(),
+  durationMinutes: z.number().int().positive().optional(),
+  difficulty: z.nativeEnum(WorkoutDifficulty).optional(),
+  type: z.nativeEnum(WorkoutType).optional(),
 });
 
 const createSetSchema = z.object({
@@ -87,6 +94,9 @@ workoutRouter.post(
       const workout = await createWorkout(createWorkoutRepository(), userId, {
         name: result.data.name,
         scheduledAt: new Date(result.data.scheduledAt),
+        durationMinutes: result.data.durationMinutes,
+        difficulty: result.data.difficulty,
+        type: result.data.type,
       });
       res.status(201).json(workout);
     } catch (err) {
@@ -113,6 +123,13 @@ workoutRouter.patch("/:id", async (req: Request, res, next) => {
           ? new Date(result.data.completedAt)
           : null,
       }),
+      ...(result.data.durationMinutes !== undefined && {
+        durationMinutes: result.data.durationMinutes,
+      }),
+      ...(result.data.difficulty !== undefined && {
+        difficulty: result.data.difficulty,
+      }),
+      ...(result.data.type !== undefined && { type: result.data.type }),
     };
     const workout = await updateWorkout(
       createWorkoutRepository(),

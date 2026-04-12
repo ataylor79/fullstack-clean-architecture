@@ -1,4 +1,4 @@
-import type { Workout } from "@domain/entities/Workout";
+import type { Workout, WorkoutDifficulty, WorkoutType } from "@domain/entities/Workout";
 import type { IWorkoutRepository } from "@domain/repositories/IWorkoutRepository";
 import { db } from "@infrastructure/database/db";
 
@@ -6,6 +6,9 @@ interface WorkoutRow {
   id: string;
   user_id: string;
   name: string;
+  duration_minutes: number;
+  difficulty: WorkoutDifficulty;
+  type: WorkoutType;
   scheduled_at: Date;
   completed_at: Date | null;
   created_at: Date;
@@ -17,6 +20,9 @@ function toEntity(row: WorkoutRow): Workout {
     id: row.id,
     userId: row.user_id,
     name: row.name,
+    durationMinutes: row.duration_minutes,
+    difficulty: row.difficulty,
+    type: row.type,
     scheduledAt: row.scheduled_at,
     completedAt: row.completed_at,
     createdAt: row.created_at,
@@ -46,6 +52,9 @@ export function createWorkoutRepository(): IWorkoutRepository {
         .insert({
           user_id: data.userId,
           name: data.name,
+          duration_minutes: data.durationMinutes,
+          difficulty: data.difficulty,
+          type: data.type,
           scheduled_at: data.scheduledAt,
           completed_at: data.completedAt,
         })
@@ -64,6 +73,13 @@ export function createWorkoutRepository(): IWorkoutRepository {
           ...(data.completedAt !== undefined && {
             completed_at: data.completedAt,
           }),
+          ...(data.durationMinutes !== undefined && {
+            duration_minutes: data.durationMinutes,
+          }),
+          ...(data.difficulty !== undefined && {
+            difficulty: data.difficulty,
+          }),
+          ...(data.type !== undefined && { type: data.type }),
           updated_at: new Date(),
         })
         .returning("*");
