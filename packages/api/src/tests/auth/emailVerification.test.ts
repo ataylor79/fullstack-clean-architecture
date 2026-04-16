@@ -111,6 +111,9 @@ describe("email verification gate on POST /api/workouts", () => {
       .send({
         name: "Morning Run",
         scheduledAt: new Date(Date.now() + 86400000).toISOString(),
+        durationMinutes: 30,
+        difficulty: "beginner",
+        type: "cardio",
       });
 
     expect(response.status).toBe(201);

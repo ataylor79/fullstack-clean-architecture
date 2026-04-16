@@ -35,21 +35,100 @@ const updateWorkoutSchema = z.object({
   type: z.nativeEnum(WorkoutType).optional(),
 });
 
-const createSetSchema = z.object({
-  exerciseId: z.string().uuid(),
+const strengthSetSchema = z.object({
+  setType: z.literal("strength"),
   setNumber: z.number().int().positive(),
+  exerciseId: z.string().uuid(),
   reps: z.number().int().positive(),
   weightKg: z.number().nonnegative(),
+  restSeconds: z.number().int().nonnegative().optional(),
   notes: z.string().optional(),
-});
+}).strict();
 
-const updateSetSchema = z.object({
-  exerciseId: z.string().uuid().optional(),
+const cardioSetSchema = z.object({
+  setType: z.literal("cardio"),
+  setNumber: z.number().int().positive(),
+  exerciseId: z.string().uuid(),
+  distanceMeters: z.number().nonnegative().optional(),
+  durationSeconds: z.number().int().positive(),
+  intensityLevel: z.number().int().min(1).max(10),
+  notes: z.string().optional(),
+}).strict();
+
+const hiitSetSchema = z.object({
+  setType: z.literal("hiit"),
+  setNumber: z.number().int().positive(),
+  exerciseId: z.string().uuid(),
+  durationSeconds: z.number().int().positive(),
+  restSeconds: z.number().int().nonnegative().optional(),
+  notes: z.string().optional(),
+}).strict();
+
+const mindBodySetSchema = z.object({
+  setType: z.enum(["yoga", "pilates", "mobility"]),
+  setNumber: z.number().int().positive(),
+  exerciseId: z.string().uuid(),
+  durationSeconds: z.number().int().positive().optional(),
+  reps: z.number().int().positive().optional(),
+  notes: z.string().optional(),
+}).strict().refine(
+  (d) => d.durationSeconds != null || d.reps != null,
+  { message: "At least one of durationSeconds or reps must be provided" },
+);
+
+// z.union is used (not discriminatedUnion) because mindBodySetSchema uses .refine(), which wraps
+// it in ZodEffects — incompatible with discriminatedUnion's ZodObject requirement.
+const createSetSchema = z.union([
+  strengthSetSchema,
+  cardioSetSchema,
+  hiitSetSchema,
+  mindBodySetSchema,
+]);
+
+const updateStrengthSetSchema = z.object({
+  setType: z.literal("strength"),
   setNumber: z.number().int().positive().optional(),
+  exerciseId: z.string().uuid().optional(),
   reps: z.number().int().positive().optional(),
   weightKg: z.number().nonnegative().optional(),
+  restSeconds: z.number().int().nonnegative().nullable().optional(),
   notes: z.string().nullable().optional(),
-});
+}).strict();
+
+const updateCardioSetSchema = z.object({
+  setType: z.literal("cardio"),
+  setNumber: z.number().int().positive().optional(),
+  exerciseId: z.string().uuid().optional(),
+  distanceMeters: z.number().nonnegative().nullable().optional(),
+  durationSeconds: z.number().int().positive().optional(),
+  intensityLevel: z.number().int().min(1).max(10).optional(),
+  notes: z.string().nullable().optional(),
+}).strict();
+
+const updateHiitSetSchema = z.object({
+  setType: z.literal("hiit"),
+  setNumber: z.number().int().positive().optional(),
+  exerciseId: z.string().uuid().optional(),
+  durationSeconds: z.number().int().positive().optional(),
+  restSeconds: z.number().int().nonnegative().nullable().optional(),
+  notes: z.string().nullable().optional(),
+}).strict();
+
+const updateMindBodySetSchema = z.object({
+  setType: z.enum(["yoga", "pilates", "mobility"]),
+  setNumber: z.number().int().positive().optional(),
+  exerciseId: z.string().uuid().optional(),
+  durationSeconds: z.number().int().positive().nullable().optional(),
+  reps: z.number().int().positive().nullable().optional(),
+  notes: z.string().nullable().optional(),
+}).strict();
+
+const updateSetSchema = z.discriminatedUnion("setType", [
+  updateStrengthSetSchema,
+  updateCardioSetSchema,
+  updateHiitSetSchema,
+  updateMindBodySetSchema,
+]);
 
 // --- Workout routes ---
 
@@ -196,6 +275,7 @@ workoutRouter.patch(
       const set = await updateSet(
         createWorkoutRepository(),
         createSetRepository(),
+        createExerciseRepository(),
         req.params.workoutId,
         req.params.setId,
         userId,

@@ -1,11 +1,12 @@
-import type { Exercise } from "@domain/entities/Exercise";
+import { ExerciseCategory, type Exercise } from "@domain/entities/Exercise";
 import type { IExerciseRepository } from "@domain/repositories/IExerciseRepository";
 import { db } from "@infrastructure/database/db";
 
 interface ExerciseRow {
   id: string;
   name: string;
-  muscle_group: string;
+  exercise_category: string;
+  muscle_group: string | null;
   notes: string | null;
   created_at: Date;
   updated_at: Date;
@@ -15,6 +16,7 @@ function toEntity(row: ExerciseRow): Exercise {
   return {
     id: row.id,
     name: row.name,
+    exerciseCategory: row.exercise_category as ExerciseCategory,
     muscleGroup: row.muscle_group,
     notes: row.notes,
     createdAt: row.created_at,
@@ -40,7 +42,8 @@ export function createExerciseRepository(): IExerciseRepository {
       const [row] = await db<ExerciseRow>("exercises")
         .insert({
           name: data.name,
-          muscle_group: data.muscleGroup,
+          exercise_category: data.exerciseCategory,
+          muscle_group: data.muscleGroup ?? null,
           notes: data.notes,
         })
         .returning("*");
@@ -52,6 +55,9 @@ export function createExerciseRepository(): IExerciseRepository {
         .where({ id })
         .update({
           ...(data.name !== undefined && { name: data.name }),
+          ...(data.exerciseCategory !== undefined && {
+            exercise_category: data.exerciseCategory,
+          }),
           ...(data.muscleGroup !== undefined && {
             muscle_group: data.muscleGroup,
           }),

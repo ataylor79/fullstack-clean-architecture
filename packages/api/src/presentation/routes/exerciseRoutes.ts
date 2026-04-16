@@ -1,3 +1,4 @@
+import { ExerciseCategory } from "@domain/entities/Exercise";
 import { createExerciseRepository } from "@infrastructure/repositories/ExerciseRepository";
 import { ConflictError, NotFoundError, ValidationError } from "@presentation/errors";
 import { requireAdmin } from "@presentation/middleware/requireAdmin";
@@ -10,14 +11,16 @@ const PG_UNIQUE_VIOLATION = "23505";
 
 const createExerciseSchema = z.object({
   name: z.string().min(1),
-  muscleGroup: z.string().min(1),
+  exerciseCategory: z.nativeEnum(ExerciseCategory),
+  muscleGroup: z.string().min(1).optional(),
   notes: z.string().optional(),
 });
 
 const updateExerciseSchema = z
   .object({
     name: z.string().min(1).optional(),
-    muscleGroup: z.string().min(1).optional(),
+    exerciseCategory: z.nativeEnum(ExerciseCategory).optional(),
+    muscleGroup: z.string().min(1).nullable().optional(),
     notes: z.string().nullable().optional(),
   })
   .refine((data) => Object.keys(data).length > 0, {
@@ -51,7 +54,9 @@ exerciseRouter.post("/", requireAdmin, async (req, res, next) => {
 
   try {
     const exercise = await createExerciseRepository().create({
-      ...result.data,
+      name: result.data.name,
+      exerciseCategory: result.data.exerciseCategory,
+      muscleGroup: result.data.muscleGroup ?? null,
       notes: result.data.notes ?? null,
     });
     res.status(201).json(exercise);

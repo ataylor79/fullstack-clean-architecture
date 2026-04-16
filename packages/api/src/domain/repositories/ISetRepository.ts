@@ -1,11 +1,13 @@
+import type { ExerciseCategory } from "@domain/entities/Exercise";
 import type { WorkoutSet } from "@domain/entities/Set";
 
-export interface WorkoutSetWithExercise extends WorkoutSet {
+export type WorkoutSetWithExercise = WorkoutSet & {
   exercise: {
     name: string;
-    muscleGroup: string;
+    muscleGroup: string | null;
+    exerciseCategory: ExerciseCategory;
   };
-}
+};
 
 export interface ISetRepository {
   findByWorkoutId(workoutId: string): Promise<WorkoutSetWithExercise[]>;
@@ -17,7 +19,7 @@ export interface ISetRepository {
     id: string,
     workoutId: string,
     data: Partial<
-      Omit<WorkoutSet, "id" | "workoutId" | "createdAt" | "updatedAt">
+      Omit<WorkoutSet, "id" | "workoutId" | "setType" | "createdAt" | "updatedAt">
     >,
   ): Promise<WorkoutSet | null>;
   delete(id: string, workoutId: string): Promise<boolean>;

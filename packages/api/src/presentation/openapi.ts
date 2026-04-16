@@ -128,14 +128,14 @@ export const openApiSpec: OpenAPIV3.Document = {
         properties: {
           id: { type: "string", format: "uuid" },
           workoutId: { type: "string", format: "uuid" },
-          exerciseId: { type: "string", format: "uuid" },
+          setType: { $ref: "#/components/schemas/SetType" },
           setNumber: { type: "integer", minimum: 1 },
-          reps: { type: "integer", minimum: 1 },
-          weightKg: { type: "number", minimum: 0 },
+          exerciseId: { type: "string", format: "uuid", nullable: true },
           notes: { type: "string", nullable: true },
           createdAt: { type: "string", format: "date-time" },
           updatedAt: { type: "string", format: "date-time" },
         },
+        description: "Base set shape — type-specific fields (reps, weightKg, durationSeconds, etc.) are present depending on setType",
       },
       WorkoutSetWithExercise: {
         allOf: [
@@ -187,24 +187,109 @@ export const openApiSpec: OpenAPIV3.Document = {
           completedAt: { type: "string", format: "date-time", nullable: true },
         },
       },
-      CreateSetBody: {
+      SetType: {
+        type: "string",
+        enum: ["strength", "hybrid", "cardio", "hiit", "yoga", "pilates", "mobility"],
+      },
+      CardioType: {
+        type: "string",
+        enum: ["run", "bike", "swim", "row"],
+      },
+      CreateStrengthSetBody: {
         type: "object",
-        required: ["exerciseId", "setNumber", "reps", "weightKg"],
+        required: ["setType", "setNumber", "exerciseId", "reps", "weightKg"],
         properties: {
-          exerciseId: { type: "string", format: "uuid" },
+          setType: { type: "string", enum: ["strength", "hybrid"] },
           setNumber: { type: "integer", minimum: 1 },
+          exerciseId: { type: "string", format: "uuid" },
           reps: { type: "integer", minimum: 1 },
           weightKg: { type: "number", minimum: 0 },
+          restSeconds: { type: "integer", minimum: 0 },
           notes: { type: "string" },
         },
       },
-      UpdateSetBody: {
+      CreateCardioSetBody: {
         type: "object",
+        required: ["setType", "setNumber", "cardioType", "durationSeconds", "intensityLevel"],
         properties: {
-          exerciseId: { type: "string", format: "uuid" },
+          setType: { type: "string", enum: ["cardio"] },
           setNumber: { type: "integer", minimum: 1 },
+          cardioType: { $ref: "#/components/schemas/CardioType" },
+          distanceMeters: { type: "number", minimum: 0 },
+          durationSeconds: { type: "integer", minimum: 1 },
+          intensityLevel: { type: "integer", minimum: 1, maximum: 10 },
+          notes: { type: "string" },
+        },
+      },
+      CreateHiitSetBody: {
+        type: "object",
+        required: ["setType", "setNumber", "durationSeconds", "restSeconds"],
+        properties: {
+          setType: { type: "string", enum: ["hiit"] },
+          setNumber: { type: "integer", minimum: 1 },
+          exerciseId: { type: "string", format: "uuid" },
+          durationSeconds: { type: "integer", minimum: 1 },
+          restSeconds: { type: "integer", minimum: 0 },
+          notes: { type: "string" },
+        },
+      },
+      CreateMindBodySetBody: {
+        type: "object",
+        required: ["setType", "setNumber", "durationSeconds"],
+        properties: {
+          setType: { type: "string", enum: ["yoga", "pilates", "mobility"] },
+          setNumber: { type: "integer", minimum: 1 },
+          exerciseId: { type: "string", format: "uuid" },
+          durationSeconds: { type: "integer", minimum: 1 },
+          notes: { type: "string" },
+        },
+      },
+      UpdateStrengthSetBody: {
+        type: "object",
+        required: ["setType"],
+        properties: {
+          setType: { type: "string", enum: ["strength", "hybrid"] },
+          setNumber: { type: "integer", minimum: 1 },
+          exerciseId: { type: "string", format: "uuid" },
           reps: { type: "integer", minimum: 1 },
           weightKg: { type: "number", minimum: 0 },
+          restSeconds: { type: "integer", minimum: 0, nullable: true },
+          notes: { type: "string", nullable: true },
+        },
+      },
+      UpdateCardioSetBody: {
+        type: "object",
+        required: ["setType"],
+        properties: {
+          setType: { type: "string", enum: ["cardio"] },
+          setNumber: { type: "integer", minimum: 1 },
+          cardioType: { $ref: "#/components/schemas/CardioType" },
+          distanceMeters: { type: "number", minimum: 0, nullable: true },
+          durationSeconds: { type: "integer", minimum: 1 },
+          intensityLevel: { type: "integer", minimum: 1, maximum: 10 },
+          notes: { type: "string", nullable: true },
+        },
+      },
+      UpdateHiitSetBody: {
+        type: "object",
+        required: ["setType"],
+        properties: {
+          setType: { type: "string", enum: ["hiit"] },
+          setNumber: { type: "integer", minimum: 1 },
+          exerciseId: { type: "string", format: "uuid", nullable: true },
+          durationSeconds: { type: "integer", minimum: 1 },
+          restSeconds: { type: "integer", minimum: 0 },
+          notes: { type: "string", nullable: true },
+        },
+      },
+      UpdateMindBodySetBody: {
+        type: "object",
+        required: ["setType"],
+        properties: {
+          setType: { type: "string", enum: ["yoga", "pilates", "mobility"] },
+          setNumber: { type: "integer", minimum: 1 },
+          exerciseId: { type: "string", format: "uuid", nullable: true },
+          durationSeconds: { type: "integer", minimum: 1 },
           notes: { type: "string", nullable: true },
         },
       },
@@ -550,6 +635,7 @@ export const openApiSpec: OpenAPIV3.Document = {
     "/api/workouts/{workoutId}/sets": {
       post: {
         summary: "Add a set to a workout",
+        description: "Body schema varies by workout type — use the appropriate CreateXxxSetBody schema matching the workout's type.",
         tags: ["Sets"],
         security: bearerAuth,
         parameters: [workoutIdParam],
@@ -557,7 +643,26 @@ export const openApiSpec: OpenAPIV3.Document = {
           required: true,
           content: {
             "application/json": {
-              schema: { $ref: "#/components/schemas/CreateSetBody" },
+              schema: {
+                oneOf: [
+                  { $ref: "#/components/schemas/CreateStrengthSetBody" },
+                  { $ref: "#/components/schemas/CreateCardioSetBody" },
+                  { $ref: "#/components/schemas/CreateHiitSetBody" },
+                  { $ref: "#/components/schemas/CreateMindBodySetBody" },
+                ],
+                discriminator: {
+                  propertyName: "setType",
+                  mapping: {
+                    strength: "#/components/schemas/CreateStrengthSetBody",
+                    hybrid: "#/components/schemas/CreateStrengthSetBody",
+                    cardio: "#/components/schemas/CreateCardioSetBody",
+                    hiit: "#/components/schemas/CreateHiitSetBody",
+                    yoga: "#/components/schemas/CreateMindBodySetBody",
+                    pilates: "#/components/schemas/CreateMindBodySetBody",
+                    mobility: "#/components/schemas/CreateMindBodySetBody",
+                  },
+                },
+              },
             },
           },
         },
@@ -580,6 +685,7 @@ export const openApiSpec: OpenAPIV3.Document = {
     "/api/workouts/{workoutId}/sets/{setId}": {
       patch: {
         summary: "Update a set",
+        description: "setType is required and must match the existing set's type. Only fields valid for that type are accepted.",
         tags: ["Sets"],
         security: bearerAuth,
         parameters: [workoutIdParam, setIdParam],
@@ -587,7 +693,26 @@ export const openApiSpec: OpenAPIV3.Document = {
           required: true,
           content: {
             "application/json": {
-              schema: { $ref: "#/components/schemas/UpdateSetBody" },
+              schema: {
+                oneOf: [
+                  { $ref: "#/components/schemas/UpdateStrengthSetBody" },
+                  { $ref: "#/components/schemas/UpdateCardioSetBody" },
+                  { $ref: "#/components/schemas/UpdateHiitSetBody" },
+                  { $ref: "#/components/schemas/UpdateMindBodySetBody" },
+                ],
+                discriminator: {
+                  propertyName: "setType",
+                  mapping: {
+                    strength: "#/components/schemas/UpdateStrengthSetBody",
+                    hybrid: "#/components/schemas/UpdateStrengthSetBody",
+                    cardio: "#/components/schemas/UpdateCardioSetBody",
+                    hiit: "#/components/schemas/UpdateHiitSetBody",
+                    yoga: "#/components/schemas/UpdateMindBodySetBody",
+                    pilates: "#/components/schemas/UpdateMindBodySetBody",
+                    mobility: "#/components/schemas/UpdateMindBodySetBody",
+                  },
+                },
+              },
             },
           },
         },
