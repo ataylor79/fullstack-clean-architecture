@@ -5,8 +5,8 @@ export default {
   theme: {
     extend: {
       fontFamily: {
-        display: ['"Bebas Neue"', 'sans-serif'],
-        sans: ['"DM Sans"', 'sans-serif'],
+        display: ['"Bebas Neue"', "sans-serif"],
+        sans: ['"DM Sans"', "sans-serif"],
       },
     },
   },

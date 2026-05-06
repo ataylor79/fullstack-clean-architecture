@@ -19,8 +19,12 @@ export interface ISetRepository {
     id: string,
     workoutId: string,
     data: Partial<
-      Omit<WorkoutSet, "id" | "workoutId" | "setType" | "createdAt" | "updatedAt">
+      Omit<
+        WorkoutSet,
+        "id" | "workoutId" | "setType" | "createdAt" | "updatedAt"
+      >
     >,
   ): Promise<WorkoutSet | null>;
   delete(id: string, workoutId: string): Promise<boolean>;
+  existsByWorkoutId(workoutId: string): Promise<boolean>;
 }

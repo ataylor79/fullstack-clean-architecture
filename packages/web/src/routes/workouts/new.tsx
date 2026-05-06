@@ -1,12 +1,15 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
-import { useCreateWorkout } from "../../features/workouts/hooks/useWorkouts";
-import { useExercises } from "../../features/workouts/hooks/useExercises";
-import { PhaseBlock, PHASE_CONFIGS } from "../../features/workouts/components/PhaseBlock";
-import { WorkoutMetaGrid } from "../../features/workouts/components/WorkoutMetaGrid";
-import type { ModalKey } from "../../features/workouts/components/WorkoutMetaGrid";
 import { MuscleGroupSelector } from "../../features/workouts/components/MuscleGroupSelector";
+import {
+  PHASE_CONFIGS,
+  PhaseBlock,
+} from "../../features/workouts/components/PhaseBlock";
 import { PickerModal } from "../../features/workouts/components/PickerModal";
+import type { ModalKey } from "../../features/workouts/components/WorkoutMetaGrid";
+import { WorkoutMetaGrid } from "../../features/workouts/components/WorkoutMetaGrid";
+import { useExercises } from "../../features/workouts/hooks/useExercises";
+import { useCreateWorkout } from "../../features/workouts/hooks/useWorkouts";
 
 export const Route = createFileRoute("/workouts/new")({
   component: NewWorkoutPage,
@@ -17,11 +20,23 @@ export const Route = createFileRoute("/workouts/new")({
 // ---------------------------------------------------------------------------
 
 const DURATION_OPTIONS = [
-  "15 min", "20 min", "30 min", "45 min", "60 min", "75 min", "90 min",
+  "15 min",
+  "20 min",
+  "30 min",
+  "45 min",
+  "60 min",
+  "75 min",
+  "90 min",
 ];
 const DIFFICULTY_OPTIONS = ["Beginner", "Intermediate", "Advanced", "Elite"];
 const TYPE_OPTIONS = [
-  "Strength", "Cardio", "HIIT", "Yoga", "Pilates", "Mobility", "Hybrid",
+  "Strength",
+  "Cardio",
+  "HIIT",
+  "Yoga",
+  "Pilates",
+  "Mobility",
+  "Hybrid",
 ];
 
 function defaultDate(): string {
@@ -75,12 +90,19 @@ function NewWorkoutPage() {
   const [duration, setDuration] = useState("45 min");
   const [difficulty, setDifficulty] = useState("Intermediate");
   const [workoutType, setWorkoutType] = useState("Strength");
-  const [selectedMuscles, setSelectedMuscles] = useState<Set<string>>(new Set());
+  const [selectedMuscles, setSelectedMuscles] = useState<Set<string>>(
+    new Set(),
+  );
   const [notes, setNotes] = useState("");
   const [activeModal, setActiveModal] = useState<ModalKey | null>(null);
   const [toast, setToast] = useState<string | null>(null);
 
-  const { exercises, add: addExercise, update: updateExercise, remove: removeExercise } = useExercises();
+  const {
+    exercises,
+    add: addExercise,
+    update: updateExercise,
+    remove: removeExercise,
+  } = useExercises();
 
   function showToast(msg: string) {
     setToast(msg);
@@ -95,10 +117,33 @@ function NewWorkoutPage() {
     });
   }
 
-  const MODAL_CONFIG: Record<ModalKey, { title: string; options: string[]; value: string; set: (v: string) => void }> = {
-    duration: { title: "Duration", options: DURATION_OPTIONS, value: duration, set: setDuration },
-    difficulty: { title: "Difficulty", options: DIFFICULTY_OPTIONS, value: difficulty, set: setDifficulty },
-    type: { title: "Workout type", options: TYPE_OPTIONS, value: workoutType, set: setWorkoutType },
+  const MODAL_CONFIG: Record<
+    ModalKey,
+    {
+      title: string;
+      options: string[];
+      value: string;
+      set: (v: string) => void;
+    }
+  > = {
+    duration: {
+      title: "Duration",
+      options: DURATION_OPTIONS,
+      value: duration,
+      set: setDuration,
+    },
+    difficulty: {
+      title: "Difficulty",
+      options: DIFFICULTY_OPTIONS,
+      value: difficulty,
+      set: setDifficulty,
+    },
+    type: {
+      title: "Workout type",
+      options: TYPE_OPTIONS,
+      value: workoutType,
+      set: setWorkoutType,
+    },
   };
 
   function handleSave() {
@@ -108,7 +153,13 @@ function NewWorkoutPage() {
     }
     const scheduledAt = new Date(`${scheduledDate}T09:00:00`);
     createWorkout(
-      { name: title.trim(), scheduledAt, durationMinutes: parseInt(duration.split(" ")[0]), difficulty, type: workoutType },
+      {
+        name: title.trim(),
+        scheduledAt,
+        durationMinutes: parseInt(duration.split(" ")[0], 10),
+        difficulty,
+        type: workoutType,
+      },
       {
         onSuccess: () => navigate({ to: "/workouts" }),
         onError: () => showToast("Failed to save. Please try again."),
@@ -118,11 +169,21 @@ function NewWorkoutPage() {
 
   return (
     <div className="font-sans max-w-[680px] py-8">
-
       {/* Header */}
       <div className="flex items-center gap-3 mb-8">
         <div className="w-12 h-12 bg-[#1a1a1a] rounded-xl flex items-center justify-center flex-shrink-0">
-          <svg viewBox="0 0 24 24" fill="none" stroke="#e85d2f" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" width="24" height="24">
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="#e85d2f"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            width="24"
+            height="24"
+            role="img"
+            aria-label="logo"
+          >
             <path d="M6 4v16M18 4v16M2 8h4M18 8h4M2 16h4M18 16h4" />
           </svg>
         </div>
@@ -130,7 +191,9 @@ function NewWorkoutPage() {
           <h1 className="font-display text-[32px] tracking-wide text-gray-900 leading-none m-0">
             Workout Builder
           </h1>
-          <p className="text-[13px] text-gray-400 mt-1">Design your full session from warm-up to cool-down</p>
+          <p className="text-[13px] text-gray-400 mt-1">
+            Design your full session from warm-up to cool-down
+          </p>
         </div>
       </div>
 
@@ -138,7 +201,9 @@ function NewWorkoutPage() {
       <div className="mb-7">
         <div className="flex items-center gap-2 mb-2.5">
           <SectionDot color="#e85d2f" />
-          <span className="text-[11px] font-medium uppercase tracking-widest text-gray-400">Workout title</span>
+          <span className="text-[11px] font-medium uppercase tracking-widest text-gray-400">
+            Workout title
+          </span>
         </div>
         <input
           type="text"
@@ -154,7 +219,9 @@ function NewWorkoutPage() {
       <div className="mb-7">
         <div className="flex items-center gap-2 mb-2.5">
           <SectionDot color="#e85d2f" />
-          <span className="text-[11px] font-medium uppercase tracking-widest text-gray-400">Details</span>
+          <span className="text-[11px] font-medium uppercase tracking-widest text-gray-400">
+            Details
+          </span>
         </div>
         <WorkoutMetaGrid
           duration={duration}
@@ -170,9 +237,14 @@ function NewWorkoutPage() {
       <div className="mb-7">
         <div className="flex items-center gap-2 mb-2.5">
           <SectionDot color="#e85d2f" />
-          <span className="text-[11px] font-medium uppercase tracking-widest text-gray-400">Muscle groups</span>
+          <span className="text-[11px] font-medium uppercase tracking-widest text-gray-400">
+            Muscle groups
+          </span>
         </div>
-        <MuscleGroupSelector selected={selectedMuscles} onToggle={toggleMuscle} />
+        <MuscleGroupSelector
+          selected={selectedMuscles}
+          onToggle={toggleMuscle}
+        />
       </div>
 
       {/* Phase blocks */}
@@ -191,7 +263,9 @@ function NewWorkoutPage() {
       <div className="mb-7">
         <div className="flex items-center gap-2 mb-2.5">
           <SectionDot color="#e85d2f" />
-          <span className="text-[11px] font-medium uppercase tracking-widest text-gray-400">Notes</span>
+          <span className="text-[11px] font-medium uppercase tracking-widest text-gray-400">
+            Notes
+          </span>
         </div>
         <NotesSection notes={notes} onChange={setNotes} />
       </div>
@@ -202,9 +276,9 @@ function NewWorkoutPage() {
       <p className="text-[12px] text-gray-400 mb-4">
         Currently only{" "}
         <strong className="font-medium text-gray-500">workout name</strong> and{" "}
-        <strong className="font-medium text-gray-500">scheduled date</strong> are saved.
-        Exercise details, duration, difficulty, type, muscle groups, and notes will be
-        persisted once the API is extended.
+        <strong className="font-medium text-gray-500">scheduled date</strong>{" "}
+        are saved. Exercise details, duration, difficulty, type, muscle groups,
+        and notes will be persisted once the API is extended.
       </p>
 
       {/* Actions */}

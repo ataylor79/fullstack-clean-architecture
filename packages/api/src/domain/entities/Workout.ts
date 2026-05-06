@@ -1,14 +1,17 @@
 export interface Workout {
   id: string;
   userId: string;
+  planId: string | null;
   name: string;
-  durationMinutes: number;
+  durationMinutes: number | null;
   difficulty: WorkoutDifficulty;
   type: WorkoutType;
   scheduledAt: Date;
   completedAt: Date | null;
+  rating: number | null;
+  notes: string | null;
   createdAt: Date;
-    updatedAt: Date;
+  updatedAt: Date;
 }
 
 export enum WorkoutDifficulty {
@@ -16,7 +19,7 @@ export enum WorkoutDifficulty {
   INTERMEDIATE = "intermediate",
   ADVANCED = "advanced",
   ELITE = "elite",
-} 
+}
 
 export enum WorkoutType {
   STRENGTH = "strength",

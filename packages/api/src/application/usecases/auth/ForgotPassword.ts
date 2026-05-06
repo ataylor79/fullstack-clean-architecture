@@ -25,6 +25,10 @@ export async function forgotPassword(deps: Deps, email: string) {
   const tokenHash = hashToken(rawToken);
   const expiresAt = new Date(Date.now() + RESET_TOKEN_TTL_MS);
 
-  await deps.passwordResetRepo.create({ userId: user.id, tokenHash, expiresAt });
+  await deps.passwordResetRepo.create({
+    userId: user.id,
+    tokenHash,
+    expiresAt,
+  });
   await deps.emailService.sendPasswordResetEmail(email, rawToken);
 }

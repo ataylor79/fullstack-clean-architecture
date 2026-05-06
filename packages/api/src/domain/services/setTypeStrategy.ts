@@ -1,28 +1,43 @@
 import { ExerciseCategory } from "@domain/entities/Exercise";
-import { WorkoutType } from "@domain/entities/Workout";
 import type { SetType } from "@domain/entities/Set";
+import { WorkoutType } from "@domain/entities/Workout";
 
-export function allowedSetTypesForWorkout(workoutType: WorkoutType): Set<SetType> {
-  switch (workoutType) {
-    case WorkoutType.STRENGTH:  return new Set(["strength"]);
-    case WorkoutType.CARDIO:    return new Set(["cardio"]);
-    case WorkoutType.HIIT:      return new Set(["hiit", "strength"]);
-    case WorkoutType.YOGA:      return new Set(["yoga"]);
-    case WorkoutType.PILATES:   return new Set(["pilates"]);
-    case WorkoutType.MOBILITY:  return new Set(["mobility"]);
-    case WorkoutType.HYBRID:    return new Set(["strength", "cardio", "hiit", "yoga", "pilates", "mobility"]);
-  }
+const ALLOWED_SET_TYPES: Record<WorkoutType, Set<SetType>> = {
+  [WorkoutType.STRENGTH]: new Set(["strength"]),
+  [WorkoutType.CARDIO]: new Set(["cardio"]),
+  [WorkoutType.HIIT]: new Set(["hiit", "strength"]),
+  [WorkoutType.YOGA]: new Set(["yoga"]),
+  [WorkoutType.PILATES]: new Set(["pilates"]),
+  [WorkoutType.MOBILITY]: new Set(["mobility"]),
+  [WorkoutType.HYBRID]: new Set([
+    "strength",
+    "cardio",
+    "hiit",
+    "yoga",
+    "pilates",
+    "mobility",
+  ]),
+};
+
+export function allowedSetTypesForWorkout(
+  workoutType: WorkoutType,
+): Set<SetType> {
+  return ALLOWED_SET_TYPES[workoutType];
 }
 
-export function requiredExerciseCategoryForSetType(setType: SetType): ExerciseCategory {
-  switch (setType) {
-    case "strength": return ExerciseCategory.STRENGTH;
-    case "cardio":   return ExerciseCategory.CARDIO;
-    case "hiit":     return ExerciseCategory.STRENGTH;
-    case "yoga":
-    case "pilates":
-    case "mobility": return ExerciseCategory.FLEXIBILITY;
-  }
+const ALLOWED_EXERCISE_CATEGORIES: Record<SetType, Set<ExerciseCategory>> = {
+  strength: new Set([ExerciseCategory.STRENGTH]),
+  cardio: new Set([ExerciseCategory.CARDIO]),
+  hiit: new Set([ExerciseCategory.STRENGTH, ExerciseCategory.CARDIO]),
+  yoga: new Set([ExerciseCategory.FLEXIBILITY]),
+  pilates: new Set([ExerciseCategory.FLEXIBILITY]),
+  mobility: new Set([ExerciseCategory.FLEXIBILITY]),
+};
+
+export function allowedExerciseCategoriesForSetType(
+  setType: SetType,
+): Set<ExerciseCategory> {
+  return ALLOWED_EXERCISE_CATEGORIES[setType];
 }
 
 // --- Create input types ---

@@ -1,8 +1,8 @@
-import argon2 from "argon2";
 import type { IPasswordResetRepository } from "@domain/repositories/IPasswordResetRepository";
 import type { IUserRepository } from "@domain/repositories/IUserRepository";
-import { ValidationError } from "@presentation/errors";
 import { hashToken } from "@infrastructure/auth/tokens";
+import { ValidationError } from "@presentation/errors";
+import argon2 from "argon2";
 
 type Deps = {
   userRepo: IUserRepository;

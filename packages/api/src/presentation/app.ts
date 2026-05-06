@@ -7,6 +7,8 @@ import { errorHandler } from "./middleware/errorHandler";
 import { openApiSpec } from "./openapi";
 import { authRouter } from "./routes/authRoutes";
 import { exerciseRouter } from "./routes/exerciseRoutes";
+import { planRouter } from "./routes/planRoutes";
+import { templateRouter } from "./routes/templateRoutes";
 import { workoutRouter } from "./routes/workoutRoutes";
 
 export function createApp(): Application {
@@ -40,6 +42,8 @@ export function createApp(): Application {
 
   app.use("/api/workouts", authenticate, workoutRouter);
   app.use("/api/exercises", authenticate, exerciseRouter);
+  app.use("/api/templates", authenticate, templateRouter);
+  app.use("/api/plans", authenticate, planRouter);
 
   app.use(errorHandler);
 

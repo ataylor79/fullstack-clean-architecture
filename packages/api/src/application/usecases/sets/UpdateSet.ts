@@ -1,10 +1,8 @@
 import type { IExerciseRepository } from "@domain/repositories/IExerciseRepository";
 import type { ISetRepository } from "@domain/repositories/ISetRepository";
 import type { IWorkoutRepository } from "@domain/repositories/IWorkoutRepository";
-import {
-  requiredExerciseCategoryForSetType,
-} from "@domain/services/setTypeStrategy";
 import type { TypedUpdateSetInput } from "@domain/services/setTypeStrategy";
+import { allowedExerciseCategoriesForSetType } from "@domain/services/setTypeStrategy";
 import { NotFoundError, ValidationError } from "@presentation/errors";
 
 export async function updateSet(
@@ -31,10 +29,12 @@ export async function updateSet(
   if ("exerciseId" in input && input.exerciseId !== undefined) {
     const exercise = await exerciseRepo.findById(input.exerciseId as string);
     if (!exercise) throw new NotFoundError("Exercise not found");
-    const requiredCategory = requiredExerciseCategoryForSetType(existing.setType);
-    if (exercise.exerciseCategory !== requiredCategory) {
+    const allowedCategories = allowedExerciseCategoriesForSetType(
+      existing.setType,
+    );
+    if (!allowedCategories.has(exercise.exerciseCategory)) {
       throw new ValidationError(
-        `Exercise category "${exercise.exerciseCategory}" does not match required category "${requiredCategory}" for set type "${existing.setType}"`,
+        `Exercise category "${exercise.exerciseCategory}" is not allowed for set type "${existing.setType}"`,
       );
     }
   }

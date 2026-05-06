@@ -7,11 +7,26 @@ const futureDate = new Date(Date.now() + 86400000).toISOString();
 let token: string;
 let workoutId: string;
 let strengthExerciseId: string;
+let secondStrengthExerciseId: string;
 let emailCounter = 0;
 
 beforeEach(async () => {
   emailCounter++;
   token = await registerAndLogin(`user${emailCounter}@example.com`);
+
+  // Seed exercises first so we can include them in the workout
+  const [bench, squat] = await db("exercises")
+    .insert([
+      {
+        name: "Bench Press",
+        muscle_group: "Chest",
+        exercise_category: "strength",
+      },
+      { name: "Squat", muscle_group: "Legs", exercise_category: "strength" },
+    ])
+    .returning("*");
+  strengthExerciseId = bench.id;
+  secondStrengthExerciseId = squat.id;
 
   const workoutRes = await authed(token)
     .post("/api/workouts")
@@ -21,21 +36,22 @@ beforeEach(async () => {
       durationMinutes: 45,
       difficulty: "intermediate",
       type: "strength",
+      exercises: [strengthExerciseId, secondStrengthExerciseId],
     });
   workoutId = workoutRes.body.id;
-
-  // Seed a strength exercise directly
-  const [exercise] = await db("exercises")
-    .insert({ name: "Bench Press", muscle_group: "Chest", exercise_category: "strength" })
-    .returning("*");
-  strengthExerciseId = exercise.id;
 });
 
 describe("POST /api/workouts/:workoutId/sets (strength)", () => {
   it("creates a strength set and returns 201", async () => {
     const response = await authed(token)
       .post(`/api/workouts/${workoutId}/sets`)
-      .send({ setType: "strength", exerciseId: strengthExerciseId, setNumber: 1, reps: 10, weightKg: 80 });
+      .send({
+        setType: "strength",
+        exerciseId: strengthExerciseId,
+        setNumber: 1,
+        reps: 10,
+        weightKg: 80,
+      });
 
     expect(response.status).toBe(201);
     expect(response.body.setType).toBe("strength");
@@ -48,7 +64,14 @@ describe("POST /api/workouts/:workoutId/sets (strength)", () => {
   it("creates a strength set with restSeconds", async () => {
     const response = await authed(token)
       .post(`/api/workouts/${workoutId}/sets`)
-      .send({ setType: "strength", exerciseId: strengthExerciseId, setNumber: 1, reps: 10, weightKg: 80, restSeconds: 90 });
+      .send({
+        setType: "strength",
+        exerciseId: strengthExerciseId,
+        setNumber: 1,
+        reps: 10,
+        weightKg: 80,
+        restSeconds: 90,
+      });
 
     expect(response.status).toBe(201);
     expect(response.body.restSeconds).toBe(90);
@@ -57,7 +80,11 @@ describe("POST /api/workouts/:workoutId/sets (strength)", () => {
   it("returns 400 when required fields are missing", async () => {
     const response = await authed(token)
       .post(`/api/workouts/${workoutId}/sets`)
-      .send({ setType: "strength", exerciseId: strengthExerciseId, setNumber: 1 }); // missing reps and weightKg
+      .send({
+        setType: "strength",
+        exerciseId: strengthExerciseId,
+        setNumber: 1,
+      }); // missing reps and weightKg
 
     expect(response.status).toBe(400);
   });
@@ -65,7 +92,14 @@ describe("POST /api/workouts/:workoutId/sets (strength)", () => {
   it("returns 400 when fields from another set type are included", async () => {
     const response = await authed(token)
       .post(`/api/workouts/${workoutId}/sets`)
-      .send({ setType: "strength", exerciseId: strengthExerciseId, setNumber: 1, reps: 10, weightKg: 80, distanceMeters: 5000 });
+      .send({
+        setType: "strength",
+        exerciseId: strengthExerciseId,
+        setNumber: 1,
+        reps: 10,
+        weightKg: 80,
+        distanceMeters: 5000,
+      });
 
     expect(response.status).toBe(400);
   });
@@ -77,7 +111,13 @@ describe("POST /api/workouts/:workoutId/sets (strength)", () => {
 
     const response = await authed(token)
       .post(`/api/workouts/${workoutId}/sets`)
-      .send({ setType: "cardio", exerciseId: cardioExercise.id, setNumber: 1, durationSeconds: 300, intensityLevel: 7 });
+      .send({
+        setType: "cardio",
+        exerciseId: cardioExercise.id,
+        setNumber: 1,
+        durationSeconds: 300,
+        intensityLevel: 7,
+      });
 
     expect(response.status).toBe(400);
   });
@@ -89,7 +129,13 @@ describe("POST /api/workouts/:workoutId/sets (strength)", () => {
 
     const response = await authed(token)
       .post(`/api/workouts/${workoutId}/sets`)
-      .send({ setType: "strength", exerciseId: cardioExercise.id, setNumber: 1, reps: 10, weightKg: 80 });
+      .send({
+        setType: "strength",
+        exerciseId: cardioExercise.id,
+        setNumber: 1,
+        reps: 10,
+        weightKg: 80,
+      });
 
     expect(response.status).toBe(400);
   });
@@ -98,35 +144,57 @@ describe("POST /api/workouts/:workoutId/sets (strength)", () => {
     const otherToken = await registerAndLogin("other@example.com");
     const response = await authed(otherToken)
       .post(`/api/workouts/${workoutId}/sets`)
-      .send({ setType: "strength", exerciseId: strengthExerciseId, setNumber: 1, reps: 10, weightKg: 80 });
+      .send({
+        setType: "strength",
+        exerciseId: strengthExerciseId,
+        setNumber: 1,
+        reps: 10,
+        weightKg: 80,
+      });
 
     expect(response.status).toBe(404);
   });
 
   it("returns 409 when same exercise and set number already exist in the workout", async () => {
-    await authed(token)
-      .post(`/api/workouts/${workoutId}/sets`)
-      .send({ setType: "strength", exerciseId: strengthExerciseId, setNumber: 1, reps: 10, weightKg: 80 });
+    await authed(token).post(`/api/workouts/${workoutId}/sets`).send({
+      setType: "strength",
+      exerciseId: strengthExerciseId,
+      setNumber: 1,
+      reps: 10,
+      weightKg: 80,
+    });
 
     const response = await authed(token)
       .post(`/api/workouts/${workoutId}/sets`)
-      .send({ setType: "strength", exerciseId: strengthExerciseId, setNumber: 1, reps: 8, weightKg: 85 });
+      .send({
+        setType: "strength",
+        exerciseId: strengthExerciseId,
+        setNumber: 1,
+        reps: 8,
+        weightKg: 85,
+      });
 
     expect(response.status).toBe(409);
   });
 
   it("allows the same set number for different exercises", async () => {
-    const [secondExercise] = await db("exercises")
-      .insert({ name: "Squat", muscle_group: "Legs", exercise_category: "strength" })
-      .returning("*");
-
-    await authed(token)
-      .post(`/api/workouts/${workoutId}/sets`)
-      .send({ setType: "strength", exerciseId: strengthExerciseId, setNumber: 1, reps: 10, weightKg: 80 });
+    await authed(token).post(`/api/workouts/${workoutId}/sets`).send({
+      setType: "strength",
+      exerciseId: strengthExerciseId,
+      setNumber: 1,
+      reps: 10,
+      weightKg: 80,
+    });
 
     const response = await authed(token)
       .post(`/api/workouts/${workoutId}/sets`)
-      .send({ setType: "strength", exerciseId: secondExercise.id, setNumber: 1, reps: 5, weightKg: 100 });
+      .send({
+        setType: "strength",
+        exerciseId: secondStrengthExerciseId,
+        setNumber: 1,
+        reps: 5,
+        weightKg: 100,
+      });
 
     expect(response.status).toBe(201);
   });
@@ -144,6 +212,28 @@ describe("POST /api/workouts/:workoutId/sets (strength)", () => {
 
     expect(response.status).toBe(404);
   });
+
+  it("returns 422 when exercise exists but is not listed in the workout", async () => {
+    const [other] = await db("exercises")
+      .insert({
+        name: "Deadlift",
+        muscle_group: "Back",
+        exercise_category: "strength",
+      })
+      .returning("*");
+
+    const response = await authed(token)
+      .post(`/api/workouts/${workoutId}/sets`)
+      .send({
+        setType: "strength",
+        exerciseId: other.id,
+        setNumber: 1,
+        reps: 5,
+        weightKg: 120,
+      });
+
+    expect(response.status).toBe(422);
+  });
 });
 
 describe("POST /api/workouts/:workoutId/sets (cardio)", () => {
@@ -151,6 +241,11 @@ describe("POST /api/workouts/:workoutId/sets (cardio)", () => {
   let cardioExerciseId: string;
 
   beforeEach(async () => {
+    const [exercise] = await db("exercises")
+      .insert({ name: "Running", exercise_category: "cardio" })
+      .returning("*");
+    cardioExerciseId = exercise.id;
+
     const res = await authed(token)
       .post("/api/workouts")
       .send({
@@ -159,13 +254,9 @@ describe("POST /api/workouts/:workoutId/sets (cardio)", () => {
         durationMinutes: 30,
         difficulty: "beginner",
         type: "cardio",
+        exercises: [cardioExerciseId],
       });
     cardioWorkoutId = res.body.id;
-
-    const [exercise] = await db("exercises")
-      .insert({ name: "Running", exercise_category: "cardio" })
-      .returning("*");
-    cardioExerciseId = exercise.id;
   });
 
   it("creates a cardio set and returns 201", async () => {
@@ -220,7 +311,13 @@ describe("POST /api/workouts/:workoutId/sets (cardio)", () => {
   it("returns 400 when set type does not match workout type", async () => {
     const response = await authed(token)
       .post(`/api/workouts/${cardioWorkoutId}/sets`)
-      .send({ setType: "strength", exerciseId: strengthExerciseId, setNumber: 1, reps: 10, weightKg: 80 });
+      .send({
+        setType: "strength",
+        exerciseId: strengthExerciseId,
+        setNumber: 1,
+        reps: 10,
+        weightKg: 80,
+      });
 
     expect(response.status).toBe(400);
   });
@@ -252,6 +349,7 @@ describe("POST /api/workouts/:workoutId/sets (HIIT)", () => {
         durationMinutes: 20,
         difficulty: "advanced",
         type: "hiit",
+        exercises: [strengthExerciseId],
       });
     hiitWorkoutId = res.body.id;
   });
@@ -326,6 +424,11 @@ describe("POST /api/workouts/:workoutId/sets (mind-body)", () => {
   let flexibilityExerciseId: string;
 
   beforeEach(async () => {
+    const [exercise] = await db("exercises")
+      .insert({ name: "Downward Dog", exercise_category: "flexibility" })
+      .returning("*");
+    flexibilityExerciseId = exercise.id;
+
     const res = await authed(token)
       .post("/api/workouts")
       .send({
@@ -334,13 +437,9 @@ describe("POST /api/workouts/:workoutId/sets (mind-body)", () => {
         durationMinutes: 60,
         difficulty: "beginner",
         type: "yoga",
+        exercises: [flexibilityExerciseId],
       });
     yogaWorkoutId = res.body.id;
-
-    const [exercise] = await db("exercises")
-      .insert({ name: "Downward Dog", exercise_category: "flexibility" })
-      .returning("*");
-    flexibilityExerciseId = exercise.id;
   });
 
   it("creates a yoga set with durationSeconds and returns 201", async () => {
@@ -404,7 +503,13 @@ describe("PATCH /api/workouts/:workoutId/sets/:setId", () => {
   it("updates a strength set and returns the updated set", async () => {
     const created = await authed(token)
       .post(`/api/workouts/${workoutId}/sets`)
-      .send({ setType: "strength", exerciseId: strengthExerciseId, setNumber: 1, reps: 10, weightKg: 80 });
+      .send({
+        setType: "strength",
+        exerciseId: strengthExerciseId,
+        setNumber: 1,
+        reps: 10,
+        weightKg: 80,
+      });
 
     const response = await authed(token)
       .patch(`/api/workouts/${workoutId}/sets/${created.body.id}`)
@@ -418,7 +523,13 @@ describe("PATCH /api/workouts/:workoutId/sets/:setId", () => {
   it("returns 400 when setType is missing from update body", async () => {
     const created = await authed(token)
       .post(`/api/workouts/${workoutId}/sets`)
-      .send({ setType: "strength", exerciseId: strengthExerciseId, setNumber: 1, reps: 10, weightKg: 80 });
+      .send({
+        setType: "strength",
+        exerciseId: strengthExerciseId,
+        setNumber: 1,
+        reps: 10,
+        weightKg: 80,
+      });
 
     const response = await authed(token)
       .patch(`/api/workouts/${workoutId}/sets/${created.body.id}`)
@@ -430,7 +541,13 @@ describe("PATCH /api/workouts/:workoutId/sets/:setId", () => {
   it("returns 400 when setType in update does not match the existing set", async () => {
     const created = await authed(token)
       .post(`/api/workouts/${workoutId}/sets`)
-      .send({ setType: "strength", exerciseId: strengthExerciseId, setNumber: 1, reps: 10, weightKg: 80 });
+      .send({
+        setType: "strength",
+        exerciseId: strengthExerciseId,
+        setNumber: 1,
+        reps: 10,
+        weightKg: 80,
+      });
 
     const response = await authed(token)
       .patch(`/api/workouts/${workoutId}/sets/${created.body.id}`)
@@ -442,7 +559,13 @@ describe("PATCH /api/workouts/:workoutId/sets/:setId", () => {
   it("returns 400 when updating exerciseId to wrong category", async () => {
     const created = await authed(token)
       .post(`/api/workouts/${workoutId}/sets`)
-      .send({ setType: "strength", exerciseId: strengthExerciseId, setNumber: 1, reps: 10, weightKg: 80 });
+      .send({
+        setType: "strength",
+        exerciseId: strengthExerciseId,
+        setNumber: 1,
+        reps: 10,
+        weightKg: 80,
+      });
 
     const [cardioExercise] = await db("exercises")
       .insert({ name: "Running", exercise_category: "cardio" })
@@ -464,11 +587,18 @@ describe("PATCH /api/workouts/:workoutId/sets/:setId", () => {
         durationMinutes: 45,
         difficulty: "intermediate",
         type: "strength",
+        exercises: [strengthExerciseId],
       });
 
     const created = await authed(token)
       .post(`/api/workouts/${workoutId}/sets`)
-      .send({ setType: "strength", exerciseId: strengthExerciseId, setNumber: 1, reps: 10, weightKg: 80 });
+      .send({
+        setType: "strength",
+        exerciseId: strengthExerciseId,
+        setNumber: 1,
+        reps: 10,
+        weightKg: 80,
+      });
 
     const response = await authed(token)
       .patch(`/api/workouts/${otherWorkoutRes.body.id}/sets/${created.body.id}`)
@@ -482,7 +612,13 @@ describe("DELETE /api/workouts/:workoutId/sets/:setId", () => {
   it("deletes a set and returns 204", async () => {
     const created = await authed(token)
       .post(`/api/workouts/${workoutId}/sets`)
-      .send({ setType: "strength", exerciseId: strengthExerciseId, setNumber: 1, reps: 10, weightKg: 80 });
+      .send({
+        setType: "strength",
+        exerciseId: strengthExerciseId,
+        setNumber: 1,
+        reps: 10,
+        weightKg: 80,
+      });
 
     const response = await authed(token).delete(
       `/api/workouts/${workoutId}/sets/${created.body.id}`,
@@ -500,11 +636,18 @@ describe("DELETE /api/workouts/:workoutId/sets/:setId", () => {
         durationMinutes: 45,
         difficulty: "intermediate",
         type: "strength",
+        exercises: [strengthExerciseId],
       });
 
     const created = await authed(token)
       .post(`/api/workouts/${workoutId}/sets`)
-      .send({ setType: "strength", exerciseId: strengthExerciseId, setNumber: 1, reps: 10, weightKg: 80 });
+      .send({
+        setType: "strength",
+        exerciseId: strengthExerciseId,
+        setNumber: 1,
+        reps: 10,
+        weightKg: 80,
+      });
 
     const response = await authed(token).delete(
       `/api/workouts/${otherWorkoutRes.body.id}/sets/${created.body.id}`,
@@ -516,12 +659,20 @@ describe("DELETE /api/workouts/:workoutId/sets/:setId", () => {
 
 describe("GET /api/workouts/:id (sets embedded)", () => {
   it("returns the workout with sets and exercise details embedded", async () => {
-    await authed(token)
-      .post(`/api/workouts/${workoutId}/sets`)
-      .send({ setType: "strength", exerciseId: strengthExerciseId, setNumber: 1, reps: 10, weightKg: 80 });
-    await authed(token)
-      .post(`/api/workouts/${workoutId}/sets`)
-      .send({ setType: "strength", exerciseId: strengthExerciseId, setNumber: 2, reps: 8, weightKg: 85 });
+    await authed(token).post(`/api/workouts/${workoutId}/sets`).send({
+      setType: "strength",
+      exerciseId: strengthExerciseId,
+      setNumber: 1,
+      reps: 10,
+      weightKg: 80,
+    });
+    await authed(token).post(`/api/workouts/${workoutId}/sets`).send({
+      setType: "strength",
+      exerciseId: strengthExerciseId,
+      setNumber: 2,
+      reps: 8,
+      weightKg: 85,
+    });
 
     const response = await authed(token).get(`/api/workouts/${workoutId}`);
 
@@ -534,6 +685,10 @@ describe("GET /api/workouts/:id (sets embedded)", () => {
   });
 
   it("returns sets with exercise details for cardio workout", async () => {
+    const [cardioExercise] = await db("exercises")
+      .insert({ name: "Running", exercise_category: "cardio" })
+      .returning("*");
+
     const cardioRes = await authed(token)
       .post("/api/workouts")
       .send({
@@ -542,16 +697,17 @@ describe("GET /api/workouts/:id (sets embedded)", () => {
         durationMinutes: 30,
         difficulty: "beginner",
         type: "cardio",
+        exercises: [cardioExercise.id],
       });
     const cardioId = cardioRes.body.id;
 
-    const [cardioExercise] = await db("exercises")
-      .insert({ name: "Running", exercise_category: "cardio" })
-      .returning("*");
-
-    await authed(token)
-      .post(`/api/workouts/${cardioId}/sets`)
-      .send({ setType: "cardio", setNumber: 1, exerciseId: cardioExercise.id, durationSeconds: 1800, intensityLevel: 6 });
+    await authed(token).post(`/api/workouts/${cardioId}/sets`).send({
+      setType: "cardio",
+      setNumber: 1,
+      exerciseId: cardioExercise.id,
+      durationSeconds: 1800,
+      intensityLevel: 6,
+    });
 
     const response = await authed(token).get(`/api/workouts/${cardioId}`);
 

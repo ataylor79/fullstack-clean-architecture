@@ -1,8 +1,12 @@
 import { db } from "@infrastructure/database/db";
-import { authed, registerAndLogin, registerAndLoginAsAdmin } from "tests/helpers/auth";
-import supertest from "supertest";
-import { beforeEach, describe, expect, it } from "vitest";
 import { createApp } from "@presentation/app";
+import supertest from "supertest";
+import {
+  authed,
+  registerAndLogin,
+  registerAndLoginAsAdmin,
+} from "tests/helpers/auth";
+import { beforeEach, describe, expect, it } from "vitest";
 
 let token: string;
 let adminToken: string;
@@ -49,7 +53,11 @@ describe("GET /api/exercises", () => {
 describe("GET /api/exercises/:id", () => {
   it("returns the exercise by id", async () => {
     const [row] = await db("exercises")
-      .insert({ name: "Bench Press", muscle_group: "Chest", exercise_category: "strength" })
+      .insert({
+        name: "Bench Press",
+        muscle_group: "Chest",
+        exercise_category: "strength",
+      })
       .returning("*");
 
     const response = await authed(token).get(`/api/exercises/${row.id}`);
@@ -70,9 +78,11 @@ describe("GET /api/exercises/:id", () => {
 
 describe("POST /api/exercises", () => {
   it("creates a strength exercise and returns 201 for admin", async () => {
-    const response = await authed(adminToken)
-      .post("/api/exercises")
-      .send({ name: "Pull-up", exerciseCategory: "strength", muscleGroup: "Back" });
+    const response = await authed(adminToken).post("/api/exercises").send({
+      name: "Pull-up",
+      exerciseCategory: "strength",
+      muscleGroup: "Back",
+    });
 
     expect(response.status).toBe(201);
     expect(response.body.id).toBeDefined();
@@ -102,30 +112,39 @@ describe("POST /api/exercises", () => {
   });
 
   it("creates an exercise with optional notes", async () => {
-    const response = await authed(adminToken)
-      .post("/api/exercises")
-      .send({ name: "Pull-up", exerciseCategory: "strength", muscleGroup: "Back", notes: "Use full ROM" });
+    const response = await authed(adminToken).post("/api/exercises").send({
+      name: "Pull-up",
+      exerciseCategory: "strength",
+      muscleGroup: "Back",
+      notes: "Use full ROM",
+    });
 
     expect(response.status).toBe(201);
     expect(response.body.notes).toBe("Use full ROM");
   });
 
   it("returns 409 when exercise name already exists", async () => {
-    await authed(adminToken)
-      .post("/api/exercises")
-      .send({ name: "Squat", exerciseCategory: "strength", muscleGroup: "Legs" });
+    await authed(adminToken).post("/api/exercises").send({
+      name: "Squat",
+      exerciseCategory: "strength",
+      muscleGroup: "Legs",
+    });
 
-    const response = await authed(adminToken)
-      .post("/api/exercises")
-      .send({ name: "Squat", exerciseCategory: "strength", muscleGroup: "Quads" });
+    const response = await authed(adminToken).post("/api/exercises").send({
+      name: "Squat",
+      exerciseCategory: "strength",
+      muscleGroup: "Quads",
+    });
 
     expect(response.status).toBe(409);
   });
 
   it("returns 403 for non-admin user", async () => {
-    const response = await authed(token)
-      .post("/api/exercises")
-      .send({ name: "Pull-up", exerciseCategory: "strength", muscleGroup: "Back" });
+    const response = await authed(token).post("/api/exercises").send({
+      name: "Pull-up",
+      exerciseCategory: "strength",
+      muscleGroup: "Back",
+    });
 
     expect(response.status).toBe(403);
   });
@@ -155,9 +174,11 @@ describe("POST /api/exercises", () => {
   });
 
   it("returns 401 without auth", async () => {
-    const response = await supertest(app)
-      .post("/api/exercises")
-      .send({ name: "Pull-up", exerciseCategory: "strength", muscleGroup: "Back" });
+    const response = await supertest(app).post("/api/exercises").send({
+      name: "Pull-up",
+      exerciseCategory: "strength",
+      muscleGroup: "Back",
+    });
 
     expect(response.status).toBe(401);
   });
@@ -192,12 +213,16 @@ describe("PATCH /api/exercises/:id", () => {
   });
 
   it("returns 409 when renaming to an existing exercise name", async () => {
-    await authed(adminToken)
-      .post("/api/exercises")
-      .send({ name: "Squat", exerciseCategory: "strength", muscleGroup: "Legs" });
-    const second = await authed(adminToken)
-      .post("/api/exercises")
-      .send({ name: "Lunge", exerciseCategory: "strength", muscleGroup: "Legs" });
+    await authed(adminToken).post("/api/exercises").send({
+      name: "Squat",
+      exerciseCategory: "strength",
+      muscleGroup: "Legs",
+    });
+    const second = await authed(adminToken).post("/api/exercises").send({
+      name: "Lunge",
+      exerciseCategory: "strength",
+      muscleGroup: "Legs",
+    });
 
     const response = await authed(adminToken)
       .patch(`/api/exercises/${second.body.id}`)
@@ -208,7 +233,11 @@ describe("PATCH /api/exercises/:id", () => {
 
   it("returns 403 for non-admin user", async () => {
     const [row] = await db("exercises")
-      .insert({ name: "Press", muscle_group: "Chest", exercise_category: "strength" })
+      .insert({
+        name: "Press",
+        muscle_group: "Chest",
+        exercise_category: "strength",
+      })
       .returning("*");
 
     const response = await authed(token)
@@ -241,9 +270,11 @@ describe("PATCH /api/exercises/:id", () => {
 
 describe("DELETE /api/exercises/:id", () => {
   it("deletes an exercise and returns 204 for admin", async () => {
-    const created = await authed(adminToken)
-      .post("/api/exercises")
-      .send({ name: "Lunge", exerciseCategory: "strength", muscleGroup: "Legs" });
+    const created = await authed(adminToken).post("/api/exercises").send({
+      name: "Lunge",
+      exerciseCategory: "strength",
+      muscleGroup: "Legs",
+    });
 
     const response = await authed(adminToken).delete(
       `/api/exercises/${created.body.id}`,
@@ -254,7 +285,11 @@ describe("DELETE /api/exercises/:id", () => {
 
   it("returns 403 for non-admin user", async () => {
     const [row] = await db("exercises")
-      .insert({ name: "Curl", muscle_group: "Biceps", exercise_category: "strength" })
+      .insert({
+        name: "Curl",
+        muscle_group: "Biceps",
+        exercise_category: "strength",
+      })
       .returning("*");
 
     const response = await authed(token).delete(`/api/exercises/${row.id}`);

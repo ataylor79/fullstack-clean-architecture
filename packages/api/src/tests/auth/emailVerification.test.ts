@@ -105,6 +105,10 @@ describe("email verification gate on POST /api/workouts", () => {
     const token = getCapturedToken("test@example.com")!;
     await supertest(app).get(`/auth/verify?token=${token}`);
 
+    const [exercise] = await db("exercises")
+      .insert({ name: "Jogging", exercise_category: "cardio" })
+      .returning("*");
+
     const response = await supertest(app)
       .post("/api/workouts")
       .set("Authorization", `Bearer ${accessToken}`)
@@ -114,6 +118,7 @@ describe("email verification gate on POST /api/workouts", () => {
         durationMinutes: 30,
         difficulty: "beginner",
         type: "cardio",
+        exercises: [exercise.id],
       });
 
     expect(response.status).toBe(201);

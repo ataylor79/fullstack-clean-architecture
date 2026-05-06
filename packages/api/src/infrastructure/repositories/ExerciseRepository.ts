@@ -1,4 +1,4 @@
-import { ExerciseCategory, type Exercise } from "@domain/entities/Exercise";
+import type { Exercise, ExerciseCategory } from "@domain/entities/Exercise";
 import type { IExerciseRepository } from "@domain/repositories/IExerciseRepository";
 import { db } from "@infrastructure/database/db";
 

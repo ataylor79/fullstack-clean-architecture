@@ -1,4 +1,4 @@
-  export interface Workout {
+export interface Workout {
   id: string;
   name: string;
   durationMinutes: number;
@@ -10,7 +10,11 @@
   updatedAt: Date;
 }
 
-export type CreateWorkoutDto = Pick<Workout, "name" | "scheduledAt" | "durationMinutes" | "difficulty" | "type">;
+export type CreateWorkoutDto = Pick<
+  Workout,
+  "name" | "scheduledAt" | "durationMinutes" | "difficulty" | "type"
+>;
 export type UpdateWorkoutDto = Partial<
-  CreateWorkoutDto & Pick<Workout, "completedAt" | "durationMinutes" | "difficulty" | "type">
+  CreateWorkoutDto &
+    Pick<Workout, "completedAt" | "durationMinutes" | "difficulty" | "type">
 >;

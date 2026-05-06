@@ -68,7 +68,12 @@ authRouter.post(
   async (req: Request, res: Response, next: NextFunction) => {
     const result = registerSchema.safeParse(req.body);
     if (!result.success) {
-      return next(new ValidationError(result.error.errors[0].message));
+      return next(
+        new ValidationError(
+          "Validation failed",
+          result.error.errors.map((e) => e.message),
+        ),
+      );
     }
 
     try {
@@ -97,7 +102,12 @@ authRouter.post(
   async (req: Request, res: Response, next: NextFunction) => {
     const result = loginSchema.safeParse(req.body);
     if (!result.success) {
-      return next(new ValidationError(result.error.errors[0].message));
+      return next(
+        new ValidationError(
+          "Validation failed",
+          result.error.errors.map((e) => e.message),
+        ),
+      );
     }
 
     try {
@@ -234,7 +244,12 @@ authRouter.post(
   async (req: Request, res: Response, next: NextFunction) => {
     const result = forgotPasswordSchema.safeParse(req.body);
     if (!result.success) {
-      return next(new ValidationError(result.error.errors[0].message));
+      return next(
+        new ValidationError(
+          "Validation failed",
+          result.error.errors.map((e) => e.message),
+        ),
+      );
     }
 
     try {
@@ -259,7 +274,12 @@ authRouter.post(
   async (req: Request, res: Response, next: NextFunction) => {
     const result = resetPasswordSchema.safeParse(req.body);
     if (!result.success) {
-      return next(new ValidationError(result.error.errors[0].message));
+      return next(
+        new ValidationError(
+          "Validation failed",
+          result.error.errors.map((e) => e.message),
+        ),
+      );
     }
 
     try {

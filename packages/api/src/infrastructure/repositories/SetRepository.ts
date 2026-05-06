@@ -1,5 +1,5 @@
-import { ExerciseCategory } from "@domain/entities/Exercise";
-import type { WorkoutSet } from "@domain/entities/Set";
+import type { ExerciseCategory } from "@domain/entities/Exercise";
+import type { SetType, WorkoutSet } from "@domain/entities/Set";
 import type {
   ISetRepository,
   WorkoutSetWithExercise,
@@ -24,6 +24,66 @@ interface SetWithExerciseRow extends SetRow {
   exercise_exercise_category: string;
 }
 
+type BaseEntity = Omit<
+  WorkoutSet,
+  | "setType"
+  | "reps"
+  | "weightKg"
+  | "restSeconds"
+  | "distanceMeters"
+  | "durationSeconds"
+  | "intensityLevel"
+>;
+
+type ToEntityMap = {
+  [K in SetType]: (
+    base: BaseEntity,
+    d: Record<string, unknown>,
+    setType: K,
+  ) => WorkoutSet;
+};
+
+const TO_ENTITY_RULES: ToEntityMap = {
+  strength: (base, d) => ({
+    ...base,
+    setType: "strength",
+    reps: d.reps as number,
+    weightKg: d.weightKg as number,
+    restSeconds: (d.restSeconds as number | null) ?? null,
+  }),
+  cardio: (base, d) => ({
+    ...base,
+    setType: "cardio",
+    distanceMeters: (d.distanceMeters as number | null) ?? null,
+    durationSeconds: d.durationSeconds as number,
+    intensityLevel: d.intensityLevel as number,
+  }),
+  hiit: (base, d) => ({
+    ...base,
+    setType: "hiit",
+    durationSeconds: d.durationSeconds as number,
+    restSeconds: (d.restSeconds as number | null) ?? null,
+  }),
+  yoga: (base, d, setType) => ({
+    ...base,
+    setType,
+    durationSeconds: (d.durationSeconds as number | null) ?? null,
+    reps: (d.reps as number | null) ?? null,
+  }),
+  pilates: (base, d, setType) => ({
+    ...base,
+    setType,
+    durationSeconds: (d.durationSeconds as number | null) ?? null,
+    reps: (d.reps as number | null) ?? null,
+  }),
+  mobility: (base, d, setType) => ({
+    ...base,
+    setType,
+    durationSeconds: (d.durationSeconds as number | null) ?? null,
+    reps: (d.reps as number | null) ?? null,
+  }),
+};
+
 function toEntity(row: SetRow): WorkoutSet {
   const base = {
     id: row.id,
@@ -34,69 +94,66 @@ function toEntity(row: SetRow): WorkoutSet {
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
-  const d = row.details;
-
-  switch (row.set_type) {
-    case "strength":
-      return {
-        ...base,
-        setType: "strength",
-        reps: d.reps as number,
-        weightKg: d.weightKg as number,
-        restSeconds: (d.restSeconds as number | null) ?? null,
-      };
-    case "cardio":
-      return {
-        ...base,
-        setType: "cardio",
-        distanceMeters: (d.distanceMeters as number | null) ?? null,
-        durationSeconds: d.durationSeconds as number,
-        intensityLevel: d.intensityLevel as number,
-      };
-    case "hiit":
-      return {
-        ...base,
-        setType: "hiit",
-        durationSeconds: d.durationSeconds as number,
-        restSeconds: (d.restSeconds as number | null) ?? null,
-      };
-    default:
-      return {
-        ...base,
-        setType: row.set_type as "yoga" | "pilates" | "mobility",
-        durationSeconds: (d.durationSeconds as number | null) ?? null,
-        reps: (d.reps as number | null) ?? null,
-      };
-  }
+  const setType = row.set_type as SetType;
+  return (
+    TO_ENTITY_RULES[setType] as (
+      base: BaseEntity,
+      d: Record<string, unknown>,
+      setType: SetType,
+    ) => WorkoutSet
+  )(base, row.details, setType);
 }
 
-function buildDetails(data: WorkoutSet): Record<string, unknown> {
-  switch (data.setType) {
-    case "strength":
-      return {
-        reps: data.reps,
-        weightKg: data.weightKg,
-        restSeconds: data.restSeconds ?? null,
-      };
-    case "cardio":
-      return {
-        distanceMeters: data.distanceMeters ?? null,
-        durationSeconds: data.durationSeconds,
-        intensityLevel: data.intensityLevel,
-      };
-    case "hiit":
-      return {
-        durationSeconds: data.durationSeconds,
-        restSeconds: data.restSeconds ?? null,
-      };
-    case "yoga":
-    case "pilates":
-    case "mobility":
-      return {
-        durationSeconds: data.durationSeconds ?? null,
-        reps: data.reps ?? null,
-      };
+// yoga/pilates/mobility share one WorkoutSet union variant (setType: "yoga" | "pilates" | "mobility"),
+// so Extract<WorkoutSet, { setType: "yoga" }> would be `never`. This helper maps each key to its variant.
+type WorkoutSetForType<K extends SetType> = Extract<
+  WorkoutSet,
+  {
+    setType: K extends "yoga" | "pilates" | "mobility"
+      ? "yoga" | "pilates" | "mobility"
+      : K;
   }
+>;
+
+type BuildDetailsMap = {
+  [K in SetType]: (data: WorkoutSetForType<K>) => Record<string, unknown>;
+};
+
+const BUILD_DETAILS_RULES: BuildDetailsMap = {
+  strength: (data) => ({
+    reps: data.reps,
+    weightKg: data.weightKg,
+    restSeconds: data.restSeconds ?? null,
+  }),
+  cardio: (data) => ({
+    distanceMeters: data.distanceMeters ?? null,
+    durationSeconds: data.durationSeconds,
+    intensityLevel: data.intensityLevel,
+  }),
+  hiit: (data) => ({
+    durationSeconds: data.durationSeconds,
+    restSeconds: data.restSeconds ?? null,
+  }),
+  yoga: (data) => ({
+    durationSeconds: data.durationSeconds ?? null,
+    reps: data.reps ?? null,
+  }),
+  pilates: (data) => ({
+    durationSeconds: data.durationSeconds ?? null,
+    reps: data.reps ?? null,
+  }),
+  mobility: (data) => ({
+    durationSeconds: data.durationSeconds ?? null,
+    reps: data.reps ?? null,
+  }),
+};
+
+function buildDetails(data: WorkoutSet): Record<string, unknown> {
+  return (
+    BUILD_DETAILS_RULES[data.setType] as (
+      data: WorkoutSet,
+    ) => Record<string, unknown>
+  )(data);
 }
 
 export function createSetRepository(): ISetRepository {
@@ -146,26 +203,37 @@ export function createSetRepository(): ISetRepository {
 
     async update(id, workoutId, data) {
       const detailsPatch: Record<string, unknown> = {};
-      if ("reps" in data && data.reps !== undefined) detailsPatch.reps = data.reps;
-      if ("weightKg" in data && data.weightKg !== undefined) detailsPatch.weightKg = data.weightKg;
-      if ("restSeconds" in data && data.restSeconds !== undefined) detailsPatch.restSeconds = data.restSeconds;
-      if ("distanceMeters" in data && data.distanceMeters !== undefined) detailsPatch.distanceMeters = data.distanceMeters;
-      if ("durationSeconds" in data && data.durationSeconds !== undefined) detailsPatch.durationSeconds = data.durationSeconds;
-      if ("intensityLevel" in data && data.intensityLevel !== undefined) detailsPatch.intensityLevel = data.intensityLevel;
+      if ("reps" in data && data.reps !== undefined)
+        detailsPatch.reps = data.reps;
+      if ("weightKg" in data && data.weightKg !== undefined)
+        detailsPatch.weightKg = data.weightKg;
+      if ("restSeconds" in data && data.restSeconds !== undefined)
+        detailsPatch.restSeconds = data.restSeconds;
+      if ("distanceMeters" in data && data.distanceMeters !== undefined)
+        detailsPatch.distanceMeters = data.distanceMeters;
+      if ("durationSeconds" in data && data.durationSeconds !== undefined)
+        detailsPatch.durationSeconds = data.durationSeconds;
+      if ("intensityLevel" in data && data.intensityLevel !== undefined)
+        detailsPatch.intensityLevel = data.intensityLevel;
 
       const [row] = await db("workout_sets")
         .where({ id, workout_id: workoutId })
         .update({
-          ...("exerciseId" in data && data.exerciseId !== undefined && {
-            exercise_id: data.exerciseId,
-          }),
-          ...("setNumber" in data && data.setNumber !== undefined && {
-            set_number: data.setNumber,
-          }),
+          ...("exerciseId" in data &&
+            data.exerciseId !== undefined && {
+              exercise_id: data.exerciseId,
+            }),
+          ...("setNumber" in data &&
+            data.setNumber !== undefined && {
+              set_number: data.setNumber,
+            }),
           ...(Object.keys(detailsPatch).length > 0 && {
-            details: db.raw("details || ?::jsonb", [JSON.stringify(detailsPatch)]),
+            details: db.raw("details || ?::jsonb", [
+              JSON.stringify(detailsPatch),
+            ]),
           }),
-          ...("notes" in data && data.notes !== undefined && { notes: data.notes }),
+          ...("notes" in data &&
+            data.notes !== undefined && { notes: data.notes }),
           updated_at: new Date(),
         })
         .returning("*");
@@ -177,6 +245,13 @@ export function createSetRepository(): ISetRepository {
         .where({ id, workout_id: workoutId })
         .delete();
       return count > 0;
+    },
+
+    async existsByWorkoutId(workoutId) {
+      const row = await db("workout_sets")
+        .where({ workout_id: workoutId })
+        .first("id");
+      return row !== undefined;
     },
   };
 }

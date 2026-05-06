@@ -10,7 +10,7 @@ export default defineConfig({
       "@domain": path.join(src, "domain"),
       "@infrastructure": path.join(src, "infrastructure"),
       "@presentation": path.join(src, "presentation"),
-      "tests": path.join(src, "tests"),
+      tests: path.join(src, "tests"),
     },
   },
   test: {

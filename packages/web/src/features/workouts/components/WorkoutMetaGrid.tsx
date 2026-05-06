@@ -40,9 +40,21 @@ export function WorkoutMetaGrid({
 }) {
   return (
     <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-      <MetaField label="Duration" value={duration} onClick={() => onOpenModal("duration")} />
-      <MetaField label="Difficulty" value={difficulty} onClick={() => onOpenModal("difficulty")} />
-      <MetaField label="Type" value={workoutType} onClick={() => onOpenModal("type")} />
+      <MetaField
+        label="Duration"
+        value={duration}
+        onClick={() => onOpenModal("duration")}
+      />
+      <MetaField
+        label="Difficulty"
+        value={difficulty}
+        onClick={() => onOpenModal("difficulty")}
+      />
+      <MetaField
+        label="Type"
+        value={workoutType}
+        onClick={() => onOpenModal("type")}
+      />
       <MetaField
         label="Scheduled"
         value={

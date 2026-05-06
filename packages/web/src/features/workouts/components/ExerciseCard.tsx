@@ -1,8 +1,26 @@
 import type { ExerciseEntry, Phase } from "../hooks/useExercises";
 
 const SETS_OPTS = ["1 set", "2 sets", "3 sets", "4 sets", "5 sets", "6 sets"];
-const REPS_OPTS = ["5 reps", "6 reps", "8 reps", "10 reps", "12 reps", "15 reps", "20 reps", "AMRAP"];
-const DUR_OPTS = ["15 sec", "20 sec", "30 sec", "45 sec", "60 sec", "90 sec", "2 min", "3 min"];
+const REPS_OPTS = [
+  "5 reps",
+  "6 reps",
+  "8 reps",
+  "10 reps",
+  "12 reps",
+  "15 reps",
+  "20 reps",
+  "AMRAP",
+];
+const DUR_OPTS = [
+  "15 sec",
+  "20 sec",
+  "30 sec",
+  "45 sec",
+  "60 sec",
+  "90 sec",
+  "2 min",
+  "3 min",
+];
 
 const PILL_BASE_CN =
   "px-2.5 py-1 rounded-[5px] border text-[12px] cursor-pointer whitespace-nowrap transition-colors";
@@ -56,7 +74,9 @@ export function ExerciseCard({
         {isTime ? (
           <button
             type="button"
-            onClick={() => onUpdate({ duration: cycle(DUR_OPTS, entry.duration) })}
+            onClick={() =>
+              onUpdate({ duration: cycle(DUR_OPTS, entry.duration) })
+            }
             className={timePillCn}
           >
             {entry.duration}

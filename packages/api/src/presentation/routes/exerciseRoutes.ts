@@ -1,6 +1,10 @@
 import { ExerciseCategory } from "@domain/entities/Exercise";
 import { createExerciseRepository } from "@infrastructure/repositories/ExerciseRepository";
-import { ConflictError, NotFoundError, ValidationError } from "@presentation/errors";
+import {
+  ConflictError,
+  NotFoundError,
+  ValidationError,
+} from "@presentation/errors";
 import { requireAdmin } from "@presentation/middleware/requireAdmin";
 import { type IRouter, Router } from "express";
 import { z } from "zod";
@@ -49,7 +53,12 @@ exerciseRouter.get("/:id", async (req, res, next) => {
 exerciseRouter.post("/", requireAdmin, async (req, res, next) => {
   const result = createExerciseSchema.safeParse(req.body);
   if (!result.success) {
-    return next(new ValidationError(result.error.errors[0].message));
+    return next(
+      new ValidationError(
+        "Validation failed",
+        result.error.errors.map((e) => e.message),
+      ),
+    );
   }
 
   try {
@@ -71,7 +80,12 @@ exerciseRouter.post("/", requireAdmin, async (req, res, next) => {
 exerciseRouter.patch("/:id", requireAdmin, async (req, res, next) => {
   const result = updateExerciseSchema.safeParse(req.body);
   if (!result.success) {
-    return next(new ValidationError(result.error.errors[0].message));
+    return next(
+      new ValidationError(
+        "Validation failed",
+        result.error.errors.map((e) => e.message),
+      ),
+    );
   }
 
   try {

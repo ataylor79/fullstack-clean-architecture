@@ -9,6 +9,7 @@ import { updateWorkout } from "@application/usecases/workouts/UpdateWorkout";
 import { WorkoutDifficulty, WorkoutType } from "@domain/entities/Workout";
 import { createExerciseRepository } from "@infrastructure/repositories/ExerciseRepository";
 import { createSetRepository } from "@infrastructure/repositories/SetRepository";
+import { createWorkoutExerciseRepository } from "@infrastructure/repositories/WorkoutExerciseRepository";
 import { createWorkoutRepository } from "@infrastructure/repositories/WorkoutRepository";
 import { NotFoundError, ValidationError } from "@presentation/errors";
 import type { AuthenticatedRequest } from "@presentation/middleware/authenticate";
@@ -24,6 +25,7 @@ const createWorkoutSchema = z.object({
   difficulty: z.nativeEnum(WorkoutDifficulty),
   type: z.nativeEnum(WorkoutType),
   scheduledAt: z.string().datetime(),
+  exercises: z.array(z.string().uuid()).min(1),
 });
 
 const updateWorkoutSchema = z.object({
@@ -33,48 +35,59 @@ const updateWorkoutSchema = z.object({
   durationMinutes: z.number().int().positive().optional(),
   difficulty: z.nativeEnum(WorkoutDifficulty).optional(),
   type: z.nativeEnum(WorkoutType).optional(),
+  exercises: z.array(z.string().uuid()).min(1).optional(),
+  rating: z.number().int().min(1).max(5).nullable().optional(),
+  notes: z.string().nullable().optional(),
 });
 
-const strengthSetSchema = z.object({
-  setType: z.literal("strength"),
-  setNumber: z.number().int().positive(),
-  exerciseId: z.string().uuid(),
-  reps: z.number().int().positive(),
-  weightKg: z.number().nonnegative(),
-  restSeconds: z.number().int().nonnegative().optional(),
-  notes: z.string().optional(),
-}).strict();
+const strengthSetSchema = z
+  .object({
+    setType: z.literal("strength"),
+    setNumber: z.number().int().positive(),
+    exerciseId: z.string().uuid(),
+    reps: z.number().int().positive(),
+    weightKg: z.number().nonnegative(),
+    restSeconds: z.number().int().nonnegative().optional(),
+    notes: z.string().optional(),
+  })
+  .strict();
 
-const cardioSetSchema = z.object({
-  setType: z.literal("cardio"),
-  setNumber: z.number().int().positive(),
-  exerciseId: z.string().uuid(),
-  distanceMeters: z.number().nonnegative().optional(),
-  durationSeconds: z.number().int().positive(),
-  intensityLevel: z.number().int().min(1).max(10),
-  notes: z.string().optional(),
-}).strict();
+const cardioSetSchema = z
+  .object({
+    setType: z.literal("cardio"),
+    setNumber: z.number().int().positive(),
+    exerciseId: z.string().uuid(),
+    distanceMeters: z.number().nonnegative().optional(),
+    durationSeconds: z.number().int().positive(),
+    intensityLevel: z.number().int().min(1).max(10),
+    notes: z.string().optional(),
+  })
+  .strict();
 
-const hiitSetSchema = z.object({
-  setType: z.literal("hiit"),
-  setNumber: z.number().int().positive(),
-  exerciseId: z.string().uuid(),
-  durationSeconds: z.number().int().positive(),
-  restSeconds: z.number().int().nonnegative().optional(),
-  notes: z.string().optional(),
-}).strict();
+const hiitSetSchema = z
+  .object({
+    setType: z.literal("hiit"),
+    setNumber: z.number().int().positive(),
+    exerciseId: z.string().uuid(),
+    durationSeconds: z.number().int().positive(),
+    restSeconds: z.number().int().nonnegative().optional(),
+    notes: z.string().optional(),
+  })
+  .strict();
 
-const mindBodySetSchema = z.object({
-  setType: z.enum(["yoga", "pilates", "mobility"]),
-  setNumber: z.number().int().positive(),
-  exerciseId: z.string().uuid(),
-  durationSeconds: z.number().int().positive().optional(),
-  reps: z.number().int().positive().optional(),
-  notes: z.string().optional(),
-}).strict().refine(
-  (d) => d.durationSeconds != null || d.reps != null,
-  { message: "At least one of durationSeconds or reps must be provided" },
-);
+const mindBodySetSchema = z
+  .object({
+    setType: z.enum(["yoga", "pilates", "mobility"]),
+    setNumber: z.number().int().positive(),
+    exerciseId: z.string().uuid(),
+    durationSeconds: z.number().int().positive().optional(),
+    reps: z.number().int().positive().optional(),
+    notes: z.string().optional(),
+  })
+  .strict()
+  .refine((d) => d.durationSeconds != null || d.reps != null, {
+    message: "At least one of durationSeconds or reps must be provided",
+  });
 
 // z.union is used (not discriminatedUnion) because mindBodySetSchema uses .refine(), which wraps
 // it in ZodEffects — incompatible with discriminatedUnion's ZodObject requirement.
@@ -85,43 +98,51 @@ const createSetSchema = z.union([
   mindBodySetSchema,
 ]);
 
-const updateStrengthSetSchema = z.object({
-  setType: z.literal("strength"),
-  setNumber: z.number().int().positive().optional(),
-  exerciseId: z.string().uuid().optional(),
-  reps: z.number().int().positive().optional(),
-  weightKg: z.number().nonnegative().optional(),
-  restSeconds: z.number().int().nonnegative().nullable().optional(),
-  notes: z.string().nullable().optional(),
-}).strict();
+const updateStrengthSetSchema = z
+  .object({
+    setType: z.literal("strength"),
+    setNumber: z.number().int().positive().optional(),
+    exerciseId: z.string().uuid().optional(),
+    reps: z.number().int().positive().optional(),
+    weightKg: z.number().nonnegative().optional(),
+    restSeconds: z.number().int().nonnegative().nullable().optional(),
+    notes: z.string().nullable().optional(),
+  })
+  .strict();
 
-const updateCardioSetSchema = z.object({
-  setType: z.literal("cardio"),
-  setNumber: z.number().int().positive().optional(),
-  exerciseId: z.string().uuid().optional(),
-  distanceMeters: z.number().nonnegative().nullable().optional(),
-  durationSeconds: z.number().int().positive().optional(),
-  intensityLevel: z.number().int().min(1).max(10).optional(),
-  notes: z.string().nullable().optional(),
-}).strict();
+const updateCardioSetSchema = z
+  .object({
+    setType: z.literal("cardio"),
+    setNumber: z.number().int().positive().optional(),
+    exerciseId: z.string().uuid().optional(),
+    distanceMeters: z.number().nonnegative().nullable().optional(),
+    durationSeconds: z.number().int().positive().optional(),
+    intensityLevel: z.number().int().min(1).max(10).optional(),
+    notes: z.string().nullable().optional(),
+  })
+  .strict();
 
-const updateHiitSetSchema = z.object({
-  setType: z.literal("hiit"),
-  setNumber: z.number().int().positive().optional(),
-  exerciseId: z.string().uuid().optional(),
-  durationSeconds: z.number().int().positive().optional(),
-  restSeconds: z.number().int().nonnegative().nullable().optional(),
-  notes: z.string().nullable().optional(),
-}).strict();
+const updateHiitSetSchema = z
+  .object({
+    setType: z.literal("hiit"),
+    setNumber: z.number().int().positive().optional(),
+    exerciseId: z.string().uuid().optional(),
+    durationSeconds: z.number().int().positive().optional(),
+    restSeconds: z.number().int().nonnegative().nullable().optional(),
+    notes: z.string().nullable().optional(),
+  })
+  .strict();
 
-const updateMindBodySetSchema = z.object({
-  setType: z.enum(["yoga", "pilates", "mobility"]),
-  setNumber: z.number().int().positive().optional(),
-  exerciseId: z.string().uuid().optional(),
-  durationSeconds: z.number().int().positive().nullable().optional(),
-  reps: z.number().int().positive().nullable().optional(),
-  notes: z.string().nullable().optional(),
-}).strict();
+const updateMindBodySetSchema = z
+  .object({
+    setType: z.enum(["yoga", "pilates", "mobility"]),
+    setNumber: z.number().int().positive().optional(),
+    exerciseId: z.string().uuid().optional(),
+    durationSeconds: z.number().int().positive().nullable().optional(),
+    reps: z.number().int().positive().nullable().optional(),
+    notes: z.string().nullable().optional(),
+  })
+  .strict();
 
 const updateSetSchema = z.discriminatedUnion("setType", [
   updateStrengthSetSchema,
@@ -135,8 +156,19 @@ const updateSetSchema = z.discriminatedUnion("setType", [
 workoutRouter.get("/", async (req: Request, res, next) => {
   try {
     const { userId } = req as AuthenticatedRequest;
-    const workouts = await getWorkouts(createWorkoutRepository(), userId);
-    res.json(workouts);
+    const page = Math.max(1, parseInt(req.query.page as string, 10) || 1);
+    const limit = Math.min(
+      100,
+      Math.max(1, parseInt(req.query.limit as string, 10) || 20),
+    );
+    const { data, total } = await getWorkouts(
+      createWorkoutRepository(),
+      userId,
+      page,
+      limit,
+    );
+    const totalPages = Math.ceil(total / limit);
+    res.json({ data, pagination: { page, limit, total, totalPages } });
   } catch (err) {
     next(err);
   }
@@ -152,8 +184,11 @@ workoutRouter.get("/:id", async (req: Request, res, next) => {
     );
     if (!workout) throw new NotFoundError("Workout not found");
 
-    const sets = await createSetRepository().findByWorkoutId(workout.id);
-    res.json({ ...workout, sets });
+    const [exercises, sets] = await Promise.all([
+      createWorkoutExerciseRepository().findByWorkoutId(workout.id),
+      createSetRepository().findByWorkoutId(workout.id),
+    ]);
+    res.json({ ...workout, exercises, sets });
   } catch (err) {
     next(err);
   }
@@ -165,19 +200,31 @@ workoutRouter.post(
   async (req: Request, res, next) => {
     const result = createWorkoutSchema.safeParse(req.body);
     if (!result.success) {
-      return next(new ValidationError(result.error.errors[0].message));
+      return next(
+        new ValidationError(
+          "Validation failed",
+          result.error.errors.map((e) => e.message),
+        ),
+      );
     }
 
     try {
       const { userId } = req as AuthenticatedRequest;
-      const workout = await createWorkout(createWorkoutRepository(), userId, {
-        name: result.data.name,
-        scheduledAt: new Date(result.data.scheduledAt),
-        durationMinutes: result.data.durationMinutes,
-        difficulty: result.data.difficulty,
-        type: result.data.type,
-      });
-      res.status(201).json(workout);
+      const { workout, exercises } = await createWorkout(
+        createWorkoutRepository(),
+        createWorkoutExerciseRepository(),
+        createExerciseRepository(),
+        userId,
+        {
+          name: result.data.name,
+          scheduledAt: new Date(result.data.scheduledAt),
+          durationMinutes: result.data.durationMinutes,
+          difficulty: result.data.difficulty,
+          type: result.data.type,
+          exercises: result.data.exercises,
+        },
+      );
+      res.status(201).json({ ...workout, exercises });
     } catch (err) {
       next(err);
     }
@@ -187,7 +234,12 @@ workoutRouter.post(
 workoutRouter.patch("/:id", async (req: Request, res, next) => {
   const result = updateWorkoutSchema.safeParse(req.body);
   if (!result.success) {
-    return next(new ValidationError(result.error.errors[0].message));
+    return next(
+      new ValidationError(
+        "Validation failed",
+        result.error.errors.map((e) => e.message),
+      ),
+    );
   }
 
   try {
@@ -209,15 +261,26 @@ workoutRouter.patch("/:id", async (req: Request, res, next) => {
         difficulty: result.data.difficulty,
       }),
       ...(result.data.type !== undefined && { type: result.data.type }),
+      ...(result.data.exercises !== undefined && {
+        exercises: result.data.exercises,
+      }),
+      ...(result.data.rating !== undefined && { rating: result.data.rating }),
+      ...(result.data.notes !== undefined && { notes: result.data.notes }),
     };
     const workout = await updateWorkout(
       createWorkoutRepository(),
+      createSetRepository(),
+      createWorkoutExerciseRepository(),
+      createExerciseRepository(),
       req.params.id,
       userId,
       data,
     );
     if (!workout) throw new NotFoundError("Workout not found");
-    res.json(workout);
+    const exercises = await createWorkoutExerciseRepository().findByWorkoutId(
+      req.params.id,
+    );
+    res.json({ ...workout, exercises });
   } catch (err) {
     next(err);
   }
@@ -243,7 +306,12 @@ workoutRouter.delete("/:id", async (req: Request, res, next) => {
 workoutRouter.post("/:workoutId/sets", async (req: Request, res, next) => {
   const result = createSetSchema.safeParse(req.body);
   if (!result.success) {
-    return next(new ValidationError(result.error.errors[0].message));
+    return next(
+      new ValidationError(
+        "Validation failed",
+        result.error.errors.map((e) => e.message),
+      ),
+    );
   }
 
   try {
@@ -252,6 +320,7 @@ workoutRouter.post("/:workoutId/sets", async (req: Request, res, next) => {
       createWorkoutRepository(),
       createSetRepository(),
       createExerciseRepository(),
+      createWorkoutExerciseRepository(),
       req.params.workoutId,
       userId,
       result.data,
@@ -267,7 +336,12 @@ workoutRouter.patch(
   async (req: Request, res, next) => {
     const result = updateSetSchema.safeParse(req.body);
     if (!result.success) {
-      return next(new ValidationError(result.error.errors[0].message));
+      return next(
+        new ValidationError(
+          "Validation failed",
+          result.error.errors.map((e) => e.message),
+        ),
+      );
     }
 
     try {
