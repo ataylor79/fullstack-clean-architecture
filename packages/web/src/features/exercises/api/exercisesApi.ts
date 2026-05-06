@@ -1,6 +1,7 @@
 import type {
   CreateExerciseDto,
   Exercise,
+  ExerciseHistoryResponse,
   UpdateExerciseDto,
 } from "@workout-app/shared";
 
@@ -27,4 +28,8 @@ export const exercisesApi = {
       body: JSON.stringify(dto),
     }),
   delete: (id: string) => request<void>(`${BASE}/${id}`, { method: "DELETE" }),
+  getHistory: (exerciseId: string, limit = 50) =>
+    request<ExerciseHistoryResponse>(
+      `${BASE}/${exerciseId}/history?limit=${limit}`,
+    ),
 };

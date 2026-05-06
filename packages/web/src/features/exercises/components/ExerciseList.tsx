@@ -1,3 +1,4 @@
+import { Link } from "@tanstack/react-router";
 import { useExercises } from "../hooks/useExercises";
 
 export function ExerciseList() {
@@ -18,10 +19,19 @@ export function ExerciseList() {
         {exercises?.map((exercise) => (
           <li
             key={exercise.id}
-            className="bg-white border border-gray-200 rounded-lg p-4"
+            className="bg-white border border-gray-200 rounded-lg p-4 flex items-center justify-between"
           >
-            <p className="font-medium text-gray-900">{exercise.name}</p>
-            <p className="text-sm text-gray-500 mt-1">{exercise.muscleGroup}</p>
+            <div>
+              <p className="font-medium text-gray-900">{exercise.name}</p>
+              <p className="text-sm text-gray-500 mt-1">{exercise.muscleGroup}</p>
+            </div>
+            <Link
+              to="/exercises/$exerciseId/history"
+              params={{ exerciseId: exercise.id }}
+              className="text-sm text-blue-600 hover:text-blue-800 shrink-0"
+            >
+              History
+            </Link>
           </li>
         ))}
       </ul>

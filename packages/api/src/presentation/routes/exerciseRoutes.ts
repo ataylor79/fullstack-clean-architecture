@@ -1,10 +1,13 @@
+import { getExerciseHistory } from "@application/usecases/exercises/GetExerciseHistory";
 import { ExerciseCategory } from "@domain/entities/Exercise";
+import { createExerciseHistoryRepository } from "@infrastructure/repositories/ExerciseHistoryRepository";
 import { createExerciseRepository } from "@infrastructure/repositories/ExerciseRepository";
 import {
   ConflictError,
   NotFoundError,
   ValidationError,
 } from "@presentation/errors";
+import type { AuthenticatedRequest } from "@presentation/middleware/authenticate";
 import { requireAdmin } from "@presentation/middleware/requireAdmin";
 import { type IRouter, Router } from "express";
 import { z } from "zod";
@@ -35,6 +38,28 @@ exerciseRouter.get("/", async (_req, res, next) => {
   try {
     const exercises = await createExerciseRepository().findAll();
     res.json(exercises);
+  } catch (err) {
+    next(err);
+  }
+});
+
+exerciseRouter.get("/:exerciseId/history", async (req, res, next) => {
+  try {
+    const { exerciseId } = req.params;
+    const rawLimit = Number(req.query.limit ?? 50);
+    const limit =
+      Number.isNaN(rawLimit) || rawLimit < 1 ? 50 : Math.min(rawLimit, 100);
+    const { userId } = req as unknown as AuthenticatedRequest;
+
+    const result = await getExerciseHistory(
+      createExerciseRepository(),
+      createExerciseHistoryRepository(),
+      exerciseId,
+      userId,
+      limit,
+    );
+
+    res.json(result);
   } catch (err) {
     next(err);
   }
